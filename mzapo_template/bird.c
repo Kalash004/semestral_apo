@@ -48,10 +48,23 @@
 #define PARLCD_REG_CMD_o                0x0008
 #define PARLCD_REG_DATA_o               0x000C
 
+// Screen size
+#define SCREEN_WIDTH 480
+#define SCREEN_HEIGHT 320
+
 //header
+typedef struct {
+  int player_count;
+  char   
+} options_t;
+
+
 void serialize();
 void program();
-void spilled_line_anim();
+// void spilled_line_anim();
+int main_menu(options_t *opts, void *lcd);
+void draw_big_font(unsigned int x_pos,unsigned int y_pos, int size, char *str, void *lcd,uint16_t fb[480][320], int highlighted);
+void draw_buffer(uint16_t buffer[480][320], void *lcd);
 // -header
 
 
@@ -62,6 +75,7 @@ int main(int argc, char *argv[])
 
   // program
   program();
+  // program_example();
 
   /* Release the lock */
   serialize_unlock();
@@ -83,12 +97,12 @@ void serialize() {
   }
 }
 
-void program() {
+void program_example() {
   // spilled_line_anim();
 
   void *lcd = map_phys_address(PARLCD_REG_BASE_PHYS, PARLCD_REG_SIZE, 0);
   parlcd_hx8357_init(lcd);
-  uint16_t fb[480][320] = {0xffff}; // frame buffer
+    uint16_t fb[480][320] = {0xffff}; // frame buffer
   memset(fb, 0xffff, sizeof(fb));
 
 
@@ -118,5 +132,68 @@ void spilled_line_anim() {
   for (size_t i = 0x00; i < 0xff; ++i) {
       *ledline = i;
         sleep(1);
+  }
+}
+
+void program() {
+  void *lcd = map_phys_address(PARLCD_REG_BASE_PHYS, PARLCD_REG_SIZE, 0);
+
+
+  int playing = 0;
+  while (playing == 0) {
+    options_t options;
+  // Make a main menu
+    playing = main_menu(&options, lcd);
+    if (playing == -1) {
+      // exit
+    }
+  }
+  while (playing == 1) {
+    // game loop    
+  }
+}
+
+int main_menu(options_t *opts, void *lcd) {
+  // Big fonts
+  // char *str = "Hello world sigma";
+  // draw_big_font(0,0,0,str, lcd);
+  uint16_t fb[480][320] = {0x0};
+  memset(fb, 0xffff, sizeof(fb));
+  draw_big_font(200, 10, 1, "Single Player", lcd, fb, 1);
+  draw_buffer(fb, lcd);
+  // Choice between menu 
+    // Read knob turns
+  // Save options
+}
+
+void draw_big_font(unsigned int x_pos,unsigned int y_pos, int size, char *str, void *lcd,uint16_t fb[480][320], int highlighted) {
+  // Fill buffer
+  font_descriptor_t *font = &font_rom8x16;
+  for(size_t i = 0; i < strlen(str); ++i) {
+    for(size_t x = 0; x < font->maxwidth; x++) {
+      for(size_t y = 0; y < font->height; y++) {
+        if (x_pos + x + i > SCREEN_WIDTH) {
+          continue;
+        }
+        if (y_pos + y > SCREEN_HEIGHT) {
+          continue;
+        }
+        if (highlighted == 0) {
+          fb[x_pos + size * (x + i * font->maxwidth)][y_pos + y * size] = font->bits[str[i] * font->height + y] & (1 << (15 - x)) ? 0x0 : 0xffff;
+        } else {
+          fb[x_pos + size * (x + i * font->maxwidth)][y_pos + y * size] = font->bits[str[i] * font->height + y] & (1 << (15 - x)) ? 0xffff : 0x0;
+        }
+      }
+    }
+  }
+
+}
+
+void draw_buffer(uint16_t buffer[480][320], void *lcd) {
+  parlcd_write_cmd(lcd, 0x2c);
+  for(size_t y = 0; y < SCREEN_HEIGHT; ++y) {
+    for(size_t x = 0; x < SCREEN_WIDTH; ++x) {
+      parlcd_write_data(lcd, buffer[x][y]);
+    }
   }
 }

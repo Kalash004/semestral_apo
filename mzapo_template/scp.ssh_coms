@@ -1,0 +1,4 @@
+  scp bird1.ppm root@192.168.223.213:/tmp/kalasan1/bird1.ppm
+  scp top.ppm root@192.168.223.213:/tmp/kalasan1/top.ppm
+  scp bottom.ppm root@192.168.223.213:/tmp/kalasan1/bottom.ppm
+  scp background.ppm root@192.168.223.213:/tmp/kalasan1/background.ppm
