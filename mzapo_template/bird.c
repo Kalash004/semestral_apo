@@ -66,6 +66,7 @@ int main_menu(options_t *opts, void *lcd);
 void draw_font(unsigned int x_pos,unsigned int y_pos, int size, char *str, void *lcd,uint16_t fb[480][320], int highlighted);
 void draw_buffer(uint16_t buffer[480][320], void *lcd);
 int draw_menu_bars(uint16_t fb[480][320], void *lcd, int highlighted, int x, int y, int padding);
+void debug_print(int i, char *pattern ,void *lcd, uint16_t fb[480][320]);
 // -header
 
 
@@ -160,21 +161,30 @@ int main_menu(options_t *opts, void *lcd) {
   // Frame buffer
   uint16_t fb[480][320] = {0x0};
   memset(fb, 0x0, sizeof(fb));
-  uint32_t rgb_knobs_value;
+  volatile uint32_t red_knobs_value = ((*(volatile uint32_t*)(mem_base + SPILED_REG_KNOBS_8BIT_o) >> 16) & 0xff);
+  volatile uint32_t click_value = 0;
 
  // Big fonts
+  int highlited_index = -1;
   draw_font(100, 10, 3, "FLAPPY BIRD", lcd, fb, 1);
-  draw_menu_bars(fb, lcd, -1, 100, 100, 40);
+  draw_menu_bars(fb, lcd, highlited_index, 100, 100, 40);
   draw_buffer(fb, lcd);
 
-  while (1) {
+  while (click_value == 0) {
+    uint32_t old = red_knobs_value;
     volatile uint32_t knobs_value = *(volatile uint32_t*)(mem_base + SPILED_REG_KNOBS_8BIT_o);
-    volatile uint32_t red_knobs_value = ((knobs_value >> 16) & 0xff);
+    red_knobs_value = ((knobs_value >> 16) & 0xff);
+    click_value = ((knobs_value >> 26) & 0xff);
+    if (((old + 4) % 256) < red_knobs_value % 256) {
+      highlited_index += 1;
+      highlited_index = highlited_index % 4;
+      // draw_menu_bars(fb, lcd, highlited_index, 100, 100, 40);
+      // draw_buffer(fb, lcd);
+    }
+    debug_print(old, "          %d",lcd, fb);
+    debug_print(old, "%d",lcd, fb);
+
     
-    // char str[5555];
-    // snprintf(str, 5555,"%d\n", red_knobs_value);
-    // draw_font(0, 0, 1, str, lcd, fb, 0);
-    // draw_buffer(fb, lcd);
 
 
   }
@@ -246,4 +256,11 @@ void draw_buffer(uint16_t buffer[480][320], void *lcd) {
       parlcd_write_data(lcd, buffer[x][y]);
     }
   }
+}
+
+void debug_print(int i, char *pattern ,void *lcd, uint16_t fb[480][320]) {
+  char str[5555];
+  snprintf(str, 5555, pattern, i);
+  draw_font(0, 0, 1, str, lcd, fb, 0);
+  draw_buffer(fb, lcd);
 }
