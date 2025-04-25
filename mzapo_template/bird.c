@@ -63,8 +63,9 @@ void serialize();
 void program();
 // void spilled_line_anim();
 int main_menu(options_t *opts, void *lcd);
-void draw_big_font(unsigned int x_pos,unsigned int y_pos, int size, char *str, void *lcd,uint16_t fb[480][320], int highlighted);
+void draw_font(unsigned int x_pos,unsigned int y_pos, int size, char *str, void *lcd,uint16_t fb[480][320], int highlighted);
 void draw_buffer(uint16_t buffer[480][320], void *lcd);
+int draw_menu_bars(uint16_t fb[480][320], void *lcd, int highlighted, int x, int y, int padding);
 // -header
 
 
@@ -140,33 +141,82 @@ void program() {
 
 
   int playing = 0;
-  while (playing == 0) {
+  // while (playing == 0) {
     options_t options;
   // Make a main menu
     playing = main_menu(&options, lcd);
     if (playing == -1) {
       // exit
     }
-  }
-  while (playing == 1) {
+  // }
+  // while (playing == 1) {
     // game loop    
-  }
+  // }
 }
 
 int main_menu(options_t *opts, void *lcd) {
-  // Big fonts
-  // char *str = "Hello world sigma";
-  // draw_big_font(0,0,0,str, lcd);
+  // Knob init
+  unsigned char *mem_base = map_phys_address(SPILED_REG_BASE_PHYS, SPILED_REG_SIZE, 0);
+  // Frame buffer
   uint16_t fb[480][320] = {0x0};
-  memset(fb, 0xffff, sizeof(fb));
-  draw_big_font(200, 10, 1, "Single Player", lcd, fb, 1);
+  memset(fb, 0x0, sizeof(fb));
+  uint32_t rgb_knobs_value;
+
+ // Big fonts
+  draw_font(100, 10, 3, "FLAPPY BIRD", lcd, fb, 1);
+  draw_menu_bars(fb, lcd, -1, 100, 100, 40);
   draw_buffer(fb, lcd);
+
+  while (1) {
+    volatile uint32_t knobs_value = *(volatile uint32_t*)(mem_base + SPILED_REG_KNOBS_8BIT_o);
+    volatile uint32_t red_knobs_value = ((knobs_value >> 16) & 0xff);
+    
+    // char str[5555];
+    // snprintf(str, 5555,"%d\n", red_knobs_value);
+    // draw_font(0, 0, 1, str, lcd, fb, 0);
+    // draw_buffer(fb, lcd);
+
+
+  }
+
+
+
+  // Big fonts
+  draw_font(100, 10, 3, "FLAPPY BIRD", lcd, fb, 1);
+  for (int i = 0; i<60; i++) {
+    // draw_menu_bars(fb, lcd, 1, 100, 100, 40);
+    // draw_buffer(fb, lcd);
+  }
   // Choice between menu 
     // Read knob turns
   // Save options
 }
 
-void draw_big_font(unsigned int x_pos,unsigned int y_pos, int size, char *str, void *lcd,uint16_t fb[480][320], int highlighted) {
+int draw_menu_bars(uint16_t fb[480][320], void *lcd, int highlighted, int x, int y, int padding) {
+  draw_font(x, y, 2, "Single Player", lcd, fb, 0);
+  draw_font(x, y+padding, 2, "Multi Player", lcd, fb, 0);
+  draw_font(x, y+padding*2, 2, "Options", lcd, fb, 0);
+  draw_font(x, y+padding*3, 2, "Exit", lcd, fb, 0);
+  switch (highlighted) {
+    case 0: 
+      draw_font(x, y, 2, "Single Player", lcd, fb, 1);
+      break;
+    case 1: 
+      draw_font(x, y+padding, 2, "Multi Player", lcd, fb, 1);
+      break;
+    case 2: 
+      draw_font(x, y+padding*2, 2, "Options", lcd, fb, 1);
+      break;
+    case 3:
+      draw_font(x, y+padding*3, 2, "Exit", lcd, fb, 1);
+      break;
+    default:
+      break;
+  }
+
+}
+
+void draw_font(unsigned int x_pos,unsigned int y_pos, int size, char *str, void *lcd,uint16_t fb[480][320], int highlighted) {
   // Fill buffer
   font_descriptor_t *font = &font_rom8x16;
   for(size_t i = 0; i < strlen(str); ++i) {
@@ -179,9 +229,9 @@ void draw_big_font(unsigned int x_pos,unsigned int y_pos, int size, char *str, v
           continue;
         }
         if (highlighted == 0) {
-          fb[x_pos + size * (x + i * font->maxwidth)][y_pos + y * size] = font->bits[str[i] * font->height + y] & (1 << (15 - x)) ? 0x0 : 0xffff;
-        } else {
           fb[x_pos + size * (x + i * font->maxwidth)][y_pos + y * size] = font->bits[str[i] * font->height + y] & (1 << (15 - x)) ? 0xffff : 0x0;
+        } else {
+          fb[x_pos + size * (x + i * font->maxwidth)][y_pos + y * size] = font->bits[str[i] * font->height + y] & (1 << (15 - x)) ? 0x0 : 0xffff;
         }
       }
     }
