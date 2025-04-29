@@ -82,7 +82,8 @@ int draw_menu_bars(uint16_t fb[480][320], void *lcd, int highlighted, int x, int
 void debug_print(char *pattern ,void *lcd, uint16_t fb[480][320], ...);
 int draw_game(uint16_t fb[480][320], void *lcd, int highlighted, int x, int y, int padding); //test method
 int get_knob_rotation();
-void load_ppm_image();
+Img* ppm_load_image();
+void write_img_to_buffer(Img* background_img, uint16_t fb[480][320]);
 // -header
 
 
@@ -172,15 +173,15 @@ void program() {
 }
 
 int main_menu(options_t *opts, void *lcd) {
+  Img* background_img = ppm_load_image();
   // Knob init
   unsigned char *mem_base = map_phys_address(SPILED_REG_BASE_PHYS, SPILED_REG_SIZE, 0);
   // Frame buffer
   uint16_t fb[480][320] = {0x0};
-  memset(fb, 0x0, sizeof(fb));
-  volatile uint32_t red_knobs_value = ((*(volatile uint32_t*)(mem_base + SPILED_REG_KNOBS_8BIT_o) >> 16) & 0xff);
-  volatile uint32_t click_value = 0;
+  //memset(fb, 0x0, sizeof(fb));
+  write_img_to_buffer(background_img, fb);
+  draw_buffer(fb, lcd);
   volatile uint32_t knobs_value = 0;
-
 
  // Big fonts
   int highlited_index = -1;
@@ -189,14 +190,14 @@ int main_menu(options_t *opts, void *lcd) {
   draw_buffer(fb, lcd);
   // struct timespec loop_delay = {.tv_sec = 0, .tv_nsec = 200 * 1000 * 1000};
   int i = 0;
-  while (click_value == 0) {
+  int click_value = 0;
+  while (1) {
     ++i;
     draw_buffer(fb, lcd);
     int rot = get_knob_rotation();
     debug_print("i: %d rot: %d",lcd, fb, i, rot);
-
+    click_value = get_knob_click();
     if (rot == 0) {
-      click_value = ((knobs_value >> 26) & 0xff);
       if(click_value == 1) {
         break;
       }
@@ -222,10 +223,10 @@ int main_menu(options_t *opts, void *lcd) {
 
   }
 
-  if(click_value == 1) {
-    draw_game(fb, lcd, highlited_index, 100, 100, 40);
-    draw_buffer(fb, lcd);
-  }
+  // if(click_value == 1) {
+    // draw_game(fb, lcd, highlited_index, 100, 100, 40);
+    // draw_buffer(fb, lcd);
+  // }
 
   debug_print("Skibidi", lcd, fb);
 
@@ -314,29 +315,13 @@ void debug_print(char *pattern, void *lcd, uint16_t fb[480][320], ...) {
     draw_buffer(fb, lcd);
 }
 
-int get_knob_rotation_t() {
-  static int old_value = -1;
+int get_knob_click() {
   unsigned char *mem_base = map_phys_address(SPILED_REG_BASE_PHYS, SPILED_REG_SIZE, 0);
-  volatile uint32_t red_knobs_value = ((*(volatile uint32_t*)(mem_base + SPILED_REG_KNOBS_8BIT_o) >> 16) & 0xff);
-  if (old_value == -1) {
-    old_value = red_knobs_value;
-  }
-  if (old_value - 1 < 0) {
-    old_value += 10;
-    red_knobs_value += 10;
-  } else if (old_value + 1 > 256) {
-    old_value += -10;
-    red_knobs_value += -10;
-  }
-
-  if ((old_value - 2) % 256 >= red_knobs_value) {
-    old_value = red_knobs_value % 256;
-    return -1;
-  }
-  if ((old_value + 2) % 256 <= red_knobs_value) {
-    old_value = red_knobs_value % 256;
+  uint8_t current_value = (*(volatile uint32_t*)(mem_base + SPILED_REG_KNOBS_8BIT_o) >> 26) & 0xff;
+  if(current_value == 1) {
     return 1;
   }
+
   return 0;
 }
 
@@ -363,12 +348,12 @@ int get_knob_rotation() {
     return (diff < 128) ? 1 : -1;
 }
 
-void ppm_load_image() {
+Img* ppm_load_image() {
     char buff[16];
     Img *img;
     FILE *fp;
     int rgbscanval;
-    fp = fopen("background.ppm", "rb");
+    fp = fopen("/tmp/kalasan1/background.ppm", "rb");
     if (!fp) {
         fprintf(stderr, "Unable to open img file n");
         return 1;
@@ -403,14 +388,33 @@ void ppm_load_image() {
 
     printf("%d", img->w);
     if (!img) {
-         fprintf(stderr, "Malloc fail\n");
-         return 1;
+        fprintf(stderr, "Malloc fail\n");
+        return 1;
     }
     if (fread(img->data, 3 * img->w, img->h, fp) != img->h) {
         //  fprintf(stderr, "Error loading img file '%s'\n", argv[1]);
          return 1;
     }
+    
     printf("%d\n", img->w);
 
     fclose(fp);
+    return img;
+}
+
+uint32_t convert_rgb_to_hexa(Pixel rgb) {
+  uint16_t r = ((uint32_t)rgb.red  >> 3) & 0x1F; // 5 bits
+  uint16_t g = ((uint32_t)rgb.green >> 2) & 0x3F; // 6 bits
+  uint16_t b = ((uint32_t)rgb.blue >> 3) & 0x1F; // 5 bits
+
+  return (r << 11) | (g << 5) | b;
+}
+
+void write_img_to_buffer(Img* background_img, uint16_t fb[SCREEN_WIDTH][SCREEN_HEIGHT]) {
+  for(int i = 0; i < SCREEN_WIDTH; ++i) {
+    for(int j = 0; j < SCREEN_HEIGHT; ++j) {
+      fb[i][j] = convert_rgb_to_hexa(background_img->data[j * SCREEN_WIDTH + i]);
+    }
+  }
+
 }
