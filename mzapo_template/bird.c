@@ -27,6 +27,8 @@
 #include "serialize_lock.h"
 #include "font_types.h"
 
+#include <stdarg.h>
+
 #define SPILED_REG_BASE_PHYS  0x43c40000
 #define SPILED_REG_SIZE       0x00004000
 
@@ -66,7 +68,7 @@ int main_menu(options_t *opts, void *lcd);
 void draw_font(unsigned int x_pos,unsigned int y_pos, int size, char *str, void *lcd,uint16_t fb[480][320], int highlighted);
 void draw_buffer(uint16_t buffer[480][320], void *lcd);
 int draw_menu_bars(uint16_t fb[480][320], void *lcd, int highlighted, int x, int y, int padding);
-void debug_print(int i, char *pattern ,void *lcd, uint16_t fb[480][320]);
+void debug_print(int i, char *pattern ,void *lcd, uint16_t fb[480][320], ...);
 int draw_game(uint16_t fb[480][320], void *lcd, int highlighted, int x, int y, int padding); //test method
 // -header
 
@@ -164,36 +166,50 @@ int main_menu(options_t *opts, void *lcd) {
   memset(fb, 0x0, sizeof(fb));
   volatile uint32_t red_knobs_value = ((*(volatile uint32_t*)(mem_base + SPILED_REG_KNOBS_8BIT_o) >> 16) & 0xff);
   volatile uint32_t click_value = 0;
+  volatile uint32_t knobs_value = 0;
+
 
  // Big fonts
   int highlited_index = -1;
   draw_font(100, 10, 3, "FLAPPY BIRD", lcd, fb, 1);
   draw_menu_bars(fb, lcd, highlited_index, 100, 100, 40);
   draw_buffer(fb, lcd);
+  // struct timespec loop_delay = {.tv_sec = 0, .tv_nsec = 200 * 1000 * 1000};
 
+  uint32_t old_knobs_value = 0;
   while (click_value == 0) {
-    struct timespec loop_delay = {.tv_sec = 0, .tv_nsec = 200 * 1000 * 1000};
-    const uint32_t old_knobs_value = red_knobs_value;
-    volatile uint32_t knobs_value = *(volatile uint32_t*)(mem_base + SPILED_REG_KNOBS_8BIT_o);
-    red_knobs_value = ((knobs_value >> 16) & 0xff);
-    if (((old_knobs_value + 4) % 256) <= red_knobs_value % 256) {
-      highlited_index += 1;
-      highlited_index = highlited_index % 4;
-      draw_menu_bars(fb, lcd, highlited_index, 100, 100, 40);
-      draw_buffer(fb, lcd);
-      debug_print(red_knobs_value, "%d",lcd, fb);
-      //debug_print(old_knobs_value, "%d",lcd, fb);
-    } else if(((old_knobs_value - 4) % 256) >= red_knobs_value % 256) {
+    
+    debug_print(red_knobs_value, "old: %d new %d",lcd, fb, old_knobs_value, red_knobs_value);
+    draw_buffer(fb, lcd);
+    if (old_knobs_value == red_knobs_value) {
+      knobs_value = *(volatile uint32_t*)(mem_base + SPILED_REG_KNOBS_8BIT_o);
+      red_knobs_value = ((knobs_value >> 16) & 0xff);
+      click_value = ((knobs_value >> 26) & 0xff);
+
+      if(click_value == 1) {
+        break;
+      }
+      continue;
+    }
+    if (old_knobs_value % 256 >= red_knobs_value + 2) {
+      old_knobs_value = red_knobs_value;
       highlited_index = (highlited_index == -1 ? 0 : highlited_index - 1);
       highlited_index = (highlited_index + 4) % 4;
       draw_menu_bars(fb, lcd, highlited_index, 100, 100, 40);
       draw_buffer(fb, lcd);
-      debug_print(red_knobs_value, "%d",lcd, fb);
-    }
+      // debug_print(red_knobs_value, "%d",lcd, fb);
+    } 
+    if (old_knobs_value % 256 <= red_knobs_value - 2) {
+      old_knobs_value = red_knobs_value;
+      highlited_index += 1;
+      highlited_index = highlited_index % 4;
+      draw_menu_bars(fb, lcd, highlited_index, 100, 100, 40);
+      draw_buffer(fb, lcd);
+      // debug_print(red_knobs_value, "%d",lcd, fb);
+    } 
     
     click_value = ((knobs_value >> 26) & 0xff);
-    
-    clock_nanosleep(CLOCK_MONOTONIC, 0, &loop_delay, NULL);
+    // clock_nanosleep(CLOCK_MONOTONIC, 0, &loop_delay, NULL);
 
   }
 
@@ -205,11 +221,11 @@ int main_menu(options_t *opts, void *lcd) {
 
 
   // Big fonts
-  draw_font(100, 10, 3, "FLAPPY BIRD", lcd, fb, 1);
-  for (int i = 0; i<60; i++) {
-    // draw_menu_bars(fb, lcd, 1, 100, 100, 40);
-    // draw_buffer(fb, lcd);
-  }
+  // draw_font(100, 10, 3, "FLAPPY BIRD", lcd, fb, 1);
+  // for (int i = 0; i<60; i++) {
+  //   // draw_menu_bars(fb, lcd, 1, 100, 100, 40);
+  //   // draw_buffer(fb, lcd);
+  // }
   // Choice between menu 
     // Read knob turns
   // Save options
@@ -241,7 +257,6 @@ int draw_menu_bars(uint16_t fb[480][320], void *lcd, int highlighted, int x, int
 
 int draw_game(uint16_t fb[480][320], void *lcd, int highlighted, int x, int y, int padding) {
   draw_font(x, y, 3, "GAME", lcd, fb, 0);
-
 }
 
 void draw_font(unsigned int x_pos,unsigned int y_pos, int size, char *str, void *lcd,uint16_t fb[480][320], int highlighted) {
@@ -276,9 +291,14 @@ void draw_buffer(uint16_t buffer[480][320], void *lcd) {
   }
 }
 
-void debug_print(int i, char *pattern ,void *lcd, uint16_t fb[480][320]) {
-  char str[5555];
-  snprintf(str, 5555, pattern, i);
-  draw_font(0, 0, 1, str, lcd, fb, 0);
-  draw_buffer(fb, lcd);
+void debug_print(int i, char *pattern, void *lcd, uint16_t fb[480][320], ...) {
+    va_list args;
+    char str[5555];
+
+    va_start(args, fb);
+    vsnprintf(str, sizeof(str), pattern, args);
+    va_end(args);
+
+    draw_font(0, 0, 1, str, lcd, fb, 0);
+    draw_buffer(fb, lcd);
 }
