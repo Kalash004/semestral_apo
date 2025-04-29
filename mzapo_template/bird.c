@@ -68,8 +68,9 @@ int main_menu(options_t *opts, void *lcd);
 void draw_font(unsigned int x_pos,unsigned int y_pos, int size, char *str, void *lcd,uint16_t fb[480][320], int highlighted);
 void draw_buffer(uint16_t buffer[480][320], void *lcd);
 int draw_menu_bars(uint16_t fb[480][320], void *lcd, int highlighted, int x, int y, int padding);
-void debug_print(int i, char *pattern ,void *lcd, uint16_t fb[480][320], ...);
+void debug_print(char *pattern ,void *lcd, uint16_t fb[480][320], ...);
 int draw_game(uint16_t fb[480][320], void *lcd, int highlighted, int x, int y, int padding); //test method
+int get_knob_rotation();
 // -header
 
 
@@ -175,39 +176,35 @@ int main_menu(options_t *opts, void *lcd) {
   draw_menu_bars(fb, lcd, highlited_index, 100, 100, 40);
   draw_buffer(fb, lcd);
   // struct timespec loop_delay = {.tv_sec = 0, .tv_nsec = 200 * 1000 * 1000};
-
-  uint32_t old_knobs_value = 0;
+  int i = 0;
   while (click_value == 0) {
-    
-    debug_print(red_knobs_value, "old: %d new %d",lcd, fb, old_knobs_value, red_knobs_value);
+    ++i;
     draw_buffer(fb, lcd);
-    if (old_knobs_value == red_knobs_value) {
-      knobs_value = *(volatile uint32_t*)(mem_base + SPILED_REG_KNOBS_8BIT_o);
-      red_knobs_value = ((knobs_value >> 16) & 0xff);
-      click_value = ((knobs_value >> 26) & 0xff);
+    int rot = get_knob_rotation();
+    debug_print("i: %d rot: %d",lcd, fb, i, rot);
 
+    if (rot == 0) {
+      click_value = ((knobs_value >> 26) & 0xff);
       if(click_value == 1) {
         break;
       }
+      draw_buffer(fb, lcd);
       continue;
     }
-    if (old_knobs_value % 256 >= red_knobs_value + 2) {
-      old_knobs_value = red_knobs_value;
+    if (rot == -1) {
       highlited_index = (highlited_index == -1 ? 0 : highlited_index - 1);
       highlited_index = (highlited_index + 4) % 4;
       draw_menu_bars(fb, lcd, highlited_index, 100, 100, 40);
       draw_buffer(fb, lcd);
-      // debug_print(red_knobs_value, "%d",lcd, fb);
     } 
-    if (old_knobs_value % 256 <= red_knobs_value - 2) {
-      old_knobs_value = red_knobs_value;
+    if (rot == 1) {
       highlited_index += 1;
       highlited_index = highlited_index % 4;
       draw_menu_bars(fb, lcd, highlited_index, 100, 100, 40);
       draw_buffer(fb, lcd);
-      // debug_print(red_knobs_value, "%d",lcd, fb);
     } 
     
+    rot = 0;
     click_value = ((knobs_value >> 26) & 0xff);
     // clock_nanosleep(CLOCK_MONOTONIC, 0, &loop_delay, NULL);
 
@@ -218,6 +215,7 @@ int main_menu(options_t *opts, void *lcd) {
     draw_buffer(fb, lcd);
   }
 
+  debug_print("Skibidi", lcd, fb);
 
 
   // Big fonts
@@ -291,7 +289,7 @@ void draw_buffer(uint16_t buffer[480][320], void *lcd) {
   }
 }
 
-void debug_print(int i, char *pattern, void *lcd, uint16_t fb[480][320], ...) {
+void debug_print(char *pattern, void *lcd, uint16_t fb[480][320], ...) {
     va_list args;
     char str[5555];
 
@@ -301,4 +299,53 @@ void debug_print(int i, char *pattern, void *lcd, uint16_t fb[480][320], ...) {
 
     draw_font(0, 0, 1, str, lcd, fb, 0);
     draw_buffer(fb, lcd);
+}
+
+int get_knob_rotation_t() {
+  static int old_value = -1;
+  unsigned char *mem_base = map_phys_address(SPILED_REG_BASE_PHYS, SPILED_REG_SIZE, 0);
+  volatile uint32_t red_knobs_value = ((*(volatile uint32_t*)(mem_base + SPILED_REG_KNOBS_8BIT_o) >> 16) & 0xff);
+  if (old_value == -1) {
+    old_value = red_knobs_value;
+  }
+  if (old_value - 1 < 0) {
+    old_value += 10;
+    red_knobs_value += 10;
+  } else if (old_value + 1 > 256) {
+    old_value += -10;
+    red_knobs_value += -10;
+  }
+
+  if ((old_value - 2) % 256 >= red_knobs_value) {
+    old_value = red_knobs_value % 256;
+    return -1;
+  }
+  if ((old_value + 2) % 256 <= red_knobs_value) {
+    old_value = red_knobs_value % 256;
+    return 1;
+  }
+  return 0;
+}
+
+int get_knob_rotation() {
+    static int old_value = -1;
+    unsigned char *mem_base = map_phys_address(SPILED_REG_BASE_PHYS, SPILED_REG_SIZE, 0);
+    uint8_t current_value = (*(volatile uint32_t*)(mem_base + SPILED_REG_KNOBS_8BIT_o) >> 16) & 0xff;
+
+    if (old_value == -1) {
+        old_value = current_value;
+        return 0;
+    }
+
+    int diff = (current_value - old_value + 256) % 256;
+
+    // Jitter
+    if (diff < 3 || diff > 253) {
+        return 0; 
+    }
+
+
+    old_value = current_value;
+
+    return (diff < 128) ? 1 : -1;
 }
