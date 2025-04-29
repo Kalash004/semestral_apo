@@ -55,7 +55,7 @@
 //header
 typedef struct {
   int player_count;
-  char   
+  char p;  
 } options_t;
 
 
@@ -67,6 +67,7 @@ void draw_font(unsigned int x_pos,unsigned int y_pos, int size, char *str, void 
 void draw_buffer(uint16_t buffer[480][320], void *lcd);
 int draw_menu_bars(uint16_t fb[480][320], void *lcd, int highlighted, int x, int y, int padding);
 void debug_print(int i, char *pattern ,void *lcd, uint16_t fb[480][320]);
+int draw_game(uint16_t fb[480][320], void *lcd, int highlighted, int x, int y, int padding); //test method
 // -header
 
 
@@ -93,7 +94,7 @@ void serialize() {
 
     if (1) {
       printf("Waitting\n");
-      /* Wait till application holding lock releases it or exits */
+      /* Wait till application hold_knobs_valueing lock releases it or exits */
       serialize_lock(0);
     }
   }
@@ -171,22 +172,34 @@ int main_menu(options_t *opts, void *lcd) {
   draw_buffer(fb, lcd);
 
   while (click_value == 0) {
-    uint32_t old = red_knobs_value;
+    struct timespec loop_delay = {.tv_sec = 0, .tv_nsec = 200 * 1000 * 1000};
+    const uint32_t old_knobs_value = red_knobs_value;
     volatile uint32_t knobs_value = *(volatile uint32_t*)(mem_base + SPILED_REG_KNOBS_8BIT_o);
     red_knobs_value = ((knobs_value >> 16) & 0xff);
-    click_value = ((knobs_value >> 26) & 0xff);
-    if (((old + 4) % 256) < red_knobs_value % 256) {
+    if (((old_knobs_value + 4) % 256) <= red_knobs_value % 256) {
       highlited_index += 1;
       highlited_index = highlited_index % 4;
-      // draw_menu_bars(fb, lcd, highlited_index, 100, 100, 40);
-      // draw_buffer(fb, lcd);
+      draw_menu_bars(fb, lcd, highlited_index, 100, 100, 40);
+      draw_buffer(fb, lcd);
+      debug_print(red_knobs_value, "%d",lcd, fb);
+      //debug_print(old_knobs_value, "%d",lcd, fb);
+    } else if(((old_knobs_value - 4) % 256) >= red_knobs_value % 256) {
+      highlited_index = (highlited_index == -1 ? 0 : highlited_index - 1);
+      highlited_index = (highlited_index + 4) % 4;
+      draw_menu_bars(fb, lcd, highlited_index, 100, 100, 40);
+      draw_buffer(fb, lcd);
+      debug_print(red_knobs_value, "%d",lcd, fb);
     }
-    debug_print(old, "          %d",lcd, fb);
-    debug_print(old, "%d",lcd, fb);
-
     
+    click_value = ((knobs_value >> 26) & 0xff);
+    
+    clock_nanosleep(CLOCK_MONOTONIC, 0, &loop_delay, NULL);
 
+  }
 
+  if(click_value == 1) {
+    draw_game(fb, lcd, highlited_index, 100, 100, 40);
+    draw_buffer(fb, lcd);
   }
 
 
@@ -223,6 +236,11 @@ int draw_menu_bars(uint16_t fb[480][320], void *lcd, int highlighted, int x, int
     default:
       break;
   }
+
+}
+
+int draw_game(uint16_t fb[480][320], void *lcd, int highlighted, int x, int y, int padding) {
+  draw_font(x, y, 3, "GAME", lcd, fb, 0);
 
 }
 
