@@ -74,9 +74,14 @@ copy-executable: $(TARGET_EXE)
 	ssh $(SSH_OPTIONS) -t $(TARGET_USER)@$(TARGET_IP) killall gdbserver 1>/dev/null 2>/dev/null || true
 	ssh $(SSH_OPTIONS) $(TARGET_USER)@$(TARGET_IP) mkdir -p $(TARGET_DIR)
 	scp $(SSH_OPTIONS) $(TARGET_EXE) $(TARGET_USER)@$(TARGET_IP):$(TARGET_DIR)/$(TARGET_EXE)
+	scp bird1.ppm root@$(TARGET_IP):$(TARGET_DIR)/bird1.ppm
+	scp top.ppm root@$(TARGET_IP):$(TARGET_DIR)/top.ppm
+	scp bottom.ppm root@$(TARGET_IP):$(TARGET_DIR)/bottom.ppm
+	scp background.ppm root@$(TARGET_IP):$(TARGET_DIR)/background.ppm
 
 run: copy-executable $(TARGET_EXE)
 	ssh $(SSH_OPTIONS) -t $(TARGET_USER)@$(TARGET_IP) $(TARGET_DIR)/$(TARGET_EXE)
+
 
 ifneq ($(filter -o ProxyJump=,$(SSH_OPTIONS))$(SSH_GDB_TUNNEL_REQUIRED),)
 SSH_GDB_PORT_FORWARD=-L 12345:127.0.0.1:12345

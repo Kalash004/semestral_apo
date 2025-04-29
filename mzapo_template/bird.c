@@ -60,6 +60,17 @@ typedef struct {
   char p;  
 } options_t;
 
+typedef struct {
+    unsigned char red;
+    unsigned char green;
+    unsigned char blue;
+} Pixel;
+
+typedef struct {
+    int w, h;
+    Pixel *data;
+} Img;
+
 
 void serialize();
 void program();
@@ -71,6 +82,7 @@ int draw_menu_bars(uint16_t fb[480][320], void *lcd, int highlighted, int x, int
 void debug_print(char *pattern ,void *lcd, uint16_t fb[480][320], ...);
 int draw_game(uint16_t fb[480][320], void *lcd, int highlighted, int x, int y, int padding); //test method
 int get_knob_rotation();
+void load_ppm_image();
 // -header
 
 
@@ -255,6 +267,7 @@ int draw_menu_bars(uint16_t fb[480][320], void *lcd, int highlighted, int x, int
 
 int draw_game(uint16_t fb[480][320], void *lcd, int highlighted, int x, int y, int padding) {
   draw_font(x, y, 3, "GAME", lcd, fb, 0);
+  ppm_load_image();
 }
 
 void draw_font(unsigned int x_pos,unsigned int y_pos, int size, char *str, void *lcd,uint16_t fb[480][320], int highlighted) {
@@ -348,4 +361,56 @@ int get_knob_rotation() {
     old_value = current_value;
 
     return (diff < 128) ? 1 : -1;
+}
+
+void ppm_load_image() {
+    char buff[16];
+    Img *img;
+    FILE *fp;
+    int rgbscanval;
+    fp = fopen("background.ppm", "rb");
+    if (!fp) {
+        fprintf(stderr, "Unable to open img file n");
+        return 1;
+    }
+
+    if (!fgets(buff, sizeof(buff), fp)) {
+        return 1;
+    }
+
+    if (buff[0] != 'P' || buff[1] != '6') {
+        fprintf(stderr, "Invalid P6 format\n");
+        return 1;
+    }
+    img = (Img *)malloc(sizeof(Img));
+    if (!img) {
+        fprintf(stderr, "Malloc fail\n");
+        return 1;
+    }
+
+    if (fscanf(fp, "%d %d", &img->w, &img->h) != 2) {
+         fprintf(stderr, "Invalid image size\n");
+         return 1;
+    }
+    if (fscanf(fp, "%d", &rgbscanval) != 1) {
+         fprintf(stderr, "Invalid max rgb value");
+         return 1;
+    }
+
+    while (fgetc(fp) != '\n');
+
+    img->data = (Pixel*)malloc(img->w * img->h * sizeof(Pixel));
+
+    printf("%d", img->w);
+    if (!img) {
+         fprintf(stderr, "Malloc fail\n");
+         return 1;
+    }
+    if (fread(img->data, 3 * img->w, img->h, fp) != img->h) {
+        //  fprintf(stderr, "Error loading img file '%s'\n", argv[1]);
+         return 1;
+    }
+    printf("%d\n", img->w);
+
+    fclose(fp);
 }
