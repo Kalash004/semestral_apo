@@ -284,7 +284,7 @@ void main_menu(options_t *opts, void *lcd) {
 }
 
 void redraw_game() {
-  write_img_to_buffer(background, -10, 0);
+  write_img_to_buffer(background, 0, 0);
   write_img_to_buffer(bird_obj->img, bird_obj->x, bird_obj->y);
   for (int i = 0; i < 6; ++i) {
     write_img_to_buffer(pipe_pool[i].img, pipe_pool[i].x, pipe_pool[i].y);
@@ -326,8 +326,10 @@ void update_pipes() {
 }
 
 int play_singleplayer() {
+  int health = 3;
   redraw_game();
   int clicked = 0;
+  sleep(1);
   while (clicked == 0) {
     clicked = get_knob_click();
   }
@@ -340,7 +342,20 @@ int play_singleplayer() {
     }
     update_pipes();
     redraw_game();
+    if (check_player_lost() == 1) health--; // Maybe ?
+    if (health < 0) break;
   }
+  // TODO: End screen
+}
+int check_player_lost() {
+  if (bird_obj->y > SCREEN_HEIGHT || bird_obj->y < 0) return 1;
+  for (int i = 0; i < 6; ++i) {
+    GameObject_t pipe = pipe_pool[i]; 
+    // TODO: think if bug should count as feature - hitboxes are bad
+    if (!(bird_obj->x + bird_obj->img->w > pipe.x && bird_obj->x < pipe.x + pipe.img->w)) continue;  
+    if (bird_obj->y > pipe.y && bird_obj->y + bird_obj->img->h < pipe.y + pipe.img->h) return 1;
+  }
+  return 0;
 }
 
 void draw_menu_bars(int highlighted, int x, int y, int padding) {
@@ -515,14 +530,19 @@ uint32_t convert_rgb_to_hexa(Pixel rgb) {
   return (r << 11) | (g << 5) | b;
 }
 
+// todo - skip given color
 void write_img_to_buffer(Img* img, int x_pos, int y_pos) {
   if(img->h + y_pos < 0 || img->w + x_pos < 0 || x_pos >= SCREEN_WIDTH || y_pos >= SCREEN_HEIGHT) {
     return; 
   }
-  //printf("%d %d skib", img->w, img->h);
   for(int i = 0; i < img->w; ++i) {
     for(int j = 0; j < img->h; ++j) {
       if (x_pos + i < 0 || y_pos + j < 0 || x_pos + i >= SCREEN_WIDTH || y_pos + j >= SCREEN_HEIGHT) {
+        continue;
+      }
+      uint32_t color = convert_rgb_to_hexa(img->data[j * img->w + i]);
+      if (color == 17289) {
+        // transparent color
         continue;
       }
       origin_fb[x_pos + i][y_pos + j] = convert_rgb_to_hexa(img->data[j * img->w + i]);
