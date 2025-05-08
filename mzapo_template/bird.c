@@ -20,6 +20,7 @@
 #include <stdint.h>
 #include <time.h>
 #include <unistd.h>
+#include <string.h>
 
 #include "mzapo_parlcd.h"
 #include "mzapo_phys.h"
@@ -54,6 +55,16 @@
 #define SCREEN_WIDTH 480
 #define SCREEN_HEIGHT 320
 
+// Gap between pipes
+#define GAP 450
+
+// Bird jump/gravity settings
+#define GRAVITY_FORCE 4
+#define JUMP_PER_FRAME 5
+
+// membase
+unsigned char *membase;
+
 //header
 typedef struct {
   int player_count;
@@ -71,21 +82,41 @@ typedef struct {
     Pixel *data;
 } Img;
 
+typedef struct {
+  int x;
+  int y;
+  int acceleration_x;
+  Img *img;
+} GameObject_t;
 
 void serialize();
 void program();
 // void spilled_line_anim();
-int main_menu(options_t *opts, void *lcd);
-void draw_font(unsigned int x_pos,unsigned int y_pos, int size, char *str, void *lcd,uint16_t fb[480][320], int highlighted);
-void draw_buffer(uint16_t buffer[480][320], void *lcd);
-int draw_menu_bars(uint16_t fb[480][320], void *lcd, int highlighted, int x, int y, int padding);
-void debug_print(char *pattern ,void *lcd, uint16_t fb[480][320], ...);
-int draw_game(uint16_t fb[480][320], void *lcd, int highlighted, int x, int y, int padding); //test method
+void main_menu(options_t *opts, void *lcd);
+void draw_font(unsigned int x_pos,unsigned int y_pos, int size, char *str, int highlighted);
+void draw_buffer();
+void draw_menu_bars(int highlighted, int x, int y, int padding);
+void debug_print(char *pattern , ...);
+int draw_game(uint16_t origin_fb[480][320], void *lcd, int highlighted, int x, int y, int padding); //test method
 int get_knob_rotation();
-Img* ppm_load_image();
-void write_img_to_buffer(Img* background_img, uint16_t fb[480][320]);
+Img* ppm_load_image(char *path);
+void write_img_to_buffer(Img* background_img, int x_pos, int y_pos);
+void exit_game();
 // -header
 
+// drawing
+uint16_t origin_fb[480][320] = {0xffff}; 
+void *origin_lcd;
+
+// images
+Img *background;
+Img *bird1;
+Img *top_pipe;
+Img *btm_pipe;
+
+// Game objects
+GameObject_t *pipe_pool;
+GameObject_t *bird_obj;
 
 int main(int argc, char *argv[])
 {
@@ -121,17 +152,17 @@ void program_example() {
 
   void *lcd = map_phys_address(PARLCD_REG_BASE_PHYS, PARLCD_REG_SIZE, 0);
   parlcd_hx8357_init(lcd);
-    uint16_t fb[480][320] = {0xffff}; // frame buffer
-  memset(fb, 0xffff, sizeof(fb));
+  uint16_t origin_fb[480][320] = {0xffff}; // frame buffer
+  memset(origin_fb, 0xffff, sizeof(origin_fb));
 
 
   char *str = "Hello world sigma";
   font_descriptor_t *font = &font_rom8x16;
   for(size_t i = 0; i < strlen(str); ++i) {
-    //fb[y][y] = 0x0; // muzeme prenastavit cast obrazku (diagonalu)
+    //origin_fb[y][y] = 0x0; // muzeme prenastavit cast obrazku (diagonalu)
     for(size_t x = 0; x < font->maxwidth; x++) {
       for(size_t y = 0; y < font->height; y++) {
-        fb[2 * (x + i * font->maxwidth)][y] = font->bits[str[i] * font->height + y] & (1 << (15 - x)) ? 0x0 : 0xffff;
+        origin_fb[2 * (x + i * font->maxwidth)][y] = font->bits[str[i] * font->height + y] & (1 << (15 - x)) ? 0x0 : 0xffff;
       }
     } // sirka fontu
   }
@@ -139,7 +170,7 @@ void program_example() {
   parlcd_write_cmd(lcd, 0x2c);
   for(size_t y = 0; y < 320; ++y) {
     for(size_t x = 0; x < 480; ++x) {
-      parlcd_write_data(lcd, fb[x][y]); //zapiseme prisl pocet pixelu
+      parlcd_write_data(lcd, origin_fb[x][y]); //zapiseme prisl pocet pixelu
     }
   }
 
@@ -155,110 +186,180 @@ void spilled_line_anim() {
 }
 
 void program() {
-  void *lcd = map_phys_address(PARLCD_REG_BASE_PHYS, PARLCD_REG_SIZE, 0);
+  origin_lcd = map_phys_address(PARLCD_REG_BASE_PHYS, PARLCD_REG_SIZE, 0);
+  membase = map_phys_address(SPILED_REG_BASE_PHYS, SPILED_REG_SIZE, 0);
 
+  background = ppm_load_image("/tmp/kalasan1/background.ppm");
+  bird1 = ppm_load_image("/tmp/kalasan1/bird1.ppm");
+  top_pipe = ppm_load_image("/tmp/kalasan1/top.ppm");
+  btm_pipe = ppm_load_image("/tmp/kalasan1/bottom.ppm");
 
-  int playing = 0;
-  // while (playing == 0) {
-    options_t options;
-  // Make a main menu
-    playing = main_menu(&options, lcd);
-    if (playing == -1) {
-      // exit
-    }
-  // }
-  // while (playing == 1) {
-    // game loop    
-  // }
+  pipe_pool = calloc(sizeof(GameObject_t), 6);
+  for (int i = 0; i < 3; ++i) {
+    GameObject_t top;
+    GameObject_t btm;
+    top.x = 0 + (i * (80 + 160));
+    btm.x = 0 + (i * (80 + 160));
+    top.y = -200;
+    btm.y = top.y + GAP;
+    top.img = top_pipe;
+    btm.img = btm_pipe;
+    pipe_pool[i] = top;
+    pipe_pool[i+3] = btm;
+  }
+
+  bird_obj = calloc(sizeof(GameObject_t), 1);
+  bird_obj->img = bird1;
+  bird_obj->x = 75;
+  bird_obj->y = 145;
+
+  options_t options;
+  main_menu(&options, origin_lcd);
+  switch (options.player_count) {
+    case 1: 
+      play_singleplayer();
+      break;
+    case 2:
+      // play_multiplayer();
+      break;
+  }
 }
 
-int main_menu(options_t *opts, void *lcd) {
-  Img* background_img = ppm_load_image();
-  // Knob init
-  unsigned char *mem_base = map_phys_address(SPILED_REG_BASE_PHYS, SPILED_REG_SIZE, 0);
+void main_menu(options_t *opts, void *lcd) {
   // Frame buffer
-  uint16_t fb[480][320] = {0x0};
-  //memset(fb, 0x0, sizeof(fb));
-  write_img_to_buffer(background_img, fb);
-  draw_buffer(fb, lcd);
+  uint16_t origin_fb[480][320] = {0x0};
+  //memset(origin_fb, 0x0, sizeof(origin_fb));
+  write_img_to_buffer(background, 0, 0);
+  draw_buffer();
   volatile uint32_t knobs_value = 0;
 
  // Big fonts
   int highlited_index = -1;
-  draw_font(100, 10, 3, "FLAPPY BIRD", lcd, fb, 1);
-  draw_menu_bars(fb, lcd, highlited_index, 100, 100, 40);
-  draw_buffer(fb, lcd);
+  draw_font(100, 10, 3, "FLAPPY BIRD",1);
+  draw_menu_bars(highlited_index, 100, 100, 40);
+  draw_buffer();
   // struct timespec loop_delay = {.tv_sec = 0, .tv_nsec = 200 * 1000 * 1000};
-  int i = 0;
   int click_value = 0;
   while (1) {
-    ++i;
-    draw_buffer(fb, lcd);
+    draw_buffer();
     int rot = get_knob_rotation();
-    debug_print("i: %d rot: %d",lcd, fb, i, rot);
     click_value = get_knob_click();
     if (rot == 0) {
       if(click_value == 1) {
         break;
       }
-      draw_buffer(fb, lcd);
+      draw_buffer();
       continue;
     }
     if (rot == -1) {
       highlited_index = (highlited_index == -1 ? 0 : highlited_index - 1);
       highlited_index = (highlited_index + 4) % 4;
-      draw_menu_bars(fb, lcd, highlited_index, 100, 100, 40);
-      draw_buffer(fb, lcd);
+      draw_menu_bars(highlited_index, 100, 100, 40);
+      draw_buffer();
     } 
     if (rot == 1) {
       highlited_index += 1;
       highlited_index = highlited_index % 4;
-      draw_menu_bars(fb, lcd, highlited_index, 100, 100, 40);
-      draw_buffer(fb, lcd);
+      draw_menu_bars(highlited_index, 100, 100, 40);
+      draw_buffer();
     } 
     
     rot = 0;
-    click_value = ((knobs_value >> 26) & 0xff);
-    // clock_nanosleep(CLOCK_MONOTONIC, 0, &loop_delay, NULL);
-
   }
-
-  // if(click_value == 1) {
-    // draw_game(fb, lcd, highlited_index, 100, 100, 40);
-    // draw_buffer(fb, lcd);
-  // }
-
-  debug_print("Skibidi", lcd, fb);
-
-
-  // Big fonts
-  // draw_font(100, 10, 3, "FLAPPY BIRD", lcd, fb, 1);
-  // for (int i = 0; i<60; i++) {
-  //   // draw_menu_bars(fb, lcd, 1, 100, 100, 40);
-  //   // draw_buffer(fb, lcd);
-  // }
-  // Choice between menu 
-    // Read knob turns
-  // Save options
-}
-
-int draw_menu_bars(uint16_t fb[480][320], void *lcd, int highlighted, int x, int y, int padding) {
-  draw_font(x, y, 2, "Single Player", lcd, fb, 0);
-  draw_font(x, y+padding, 2, "Multi Player", lcd, fb, 0);
-  draw_font(x, y+padding*2, 2, "Options", lcd, fb, 0);
-  draw_font(x, y+padding*3, 2, "Exit", lcd, fb, 0);
-  switch (highlighted) {
-    case 0: 
-      draw_font(x, y, 2, "Single Player", lcd, fb, 1);
+  switch (highlited_index) {
+    case 0:
+      opts->player_count = 1;  
       break;
-    case 1: 
-      draw_font(x, y+padding, 2, "Multi Player", lcd, fb, 1);
+    case 1:
+      opts->player_count = 2;
       break;
-    case 2: 
-      draw_font(x, y+padding*2, 2, "Options", lcd, fb, 1);
+    case 2:
+      // TODO write stats
       break;
     case 3:
-      draw_font(x, y+padding*3, 2, "Exit", lcd, fb, 1);
+      exit_game();
+      break;
+  }
+
+}
+
+void redraw_game() {
+  write_img_to_buffer(background, -10, 0);
+  write_img_to_buffer(bird_obj->img, bird_obj->x, bird_obj->y);
+  for (int i = 0; i < 6; ++i) {
+    write_img_to_buffer(pipe_pool[i].img, pipe_pool[i].x, pipe_pool[i].y);
+  }
+  draw_buffer();
+}
+
+void exit_game() {
+  memset(origin_fb, 0x0, sizeof(origin_fb));
+  draw_buffer();
+  exit(0);
+}
+
+void physics() {
+  bird_obj->acceleration_x -= GRAVITY_FORCE;
+  if(bird_obj->acceleration_x > 0) {
+    bird_obj->acceleration_x -= JUMP_PER_FRAME; 
+  }
+  if(bird_obj->acceleration_x < -25) {
+    bird_obj->acceleration_x = -25;
+  } else if(bird_obj->acceleration_x > 55) {
+    bird_obj->acceleration_x = 55;
+  }
+  bird_obj->y -= bird_obj->acceleration_x;
+}
+
+void update_pipes() {
+  for(int i = 0; i < 3; ++i) {
+    pipe_pool[i].x -= 3;
+    pipe_pool[i + 3].x -= 3;
+    if(pipe_pool[i].x < -100) {
+      int rand_y = rand() % 190;
+      pipe_pool[i].y = -320 + rand_y;
+      pipe_pool[i + 3].y = -320 + rand_y + GAP;
+      pipe_pool[i].x = 620;
+      pipe_pool[i + 3].x = 620;
+    }
+  }
+}
+
+int play_singleplayer() {
+  redraw_game();
+  int clicked = 0;
+  while (clicked == 0) {
+    clicked = get_knob_click();
+  }
+
+  while (1) {
+    physics(); // TODO: think about values 
+    clicked = get_knob_click();
+    if (clicked == 1) {
+      bird_obj->acceleration_x += 50;
+    }
+    update_pipes();
+    redraw_game();
+  }
+}
+
+void draw_menu_bars(int highlighted, int x, int y, int padding) {
+  draw_font(x, y, 2, "Single Player", 0);
+  draw_font(x, y+padding, 2, "Multi Player", 0);
+  draw_font(x, y+padding*2, 2, "Stats", 0);
+  draw_font(x, y+padding*3, 2, "Exit", 0);
+  switch (highlighted) {
+    case 0: 
+      draw_font(x, y, 2, "Single Player", 1);
+      break;
+    case 1: 
+      draw_font(x, y+padding, 2, "Multi Player", 1);
+      break;
+    case 2: 
+      draw_font(x, y+padding*2, 2, "Stats", 1);
+      break;
+    case 3:
+      draw_font(x, y+padding*3, 2, "Exit", 1);
       break;
     default:
       break;
@@ -266,12 +367,11 @@ int draw_menu_bars(uint16_t fb[480][320], void *lcd, int highlighted, int x, int
 
 }
 
-int draw_game(uint16_t fb[480][320], void *lcd, int highlighted, int x, int y, int padding) {
-  draw_font(x, y, 3, "GAME", lcd, fb, 0);
-  ppm_load_image();
+int draw_game(uint16_t origin_fb[480][320], void *lcd, int highlighted, int x, int y, int padding) {
+  draw_font(x, y, 3, "GAME", 0);
 }
 
-void draw_font(unsigned int x_pos,unsigned int y_pos, int size, char *str, void *lcd,uint16_t fb[480][320], int highlighted) {
+void draw_font(unsigned int x_pos,unsigned int y_pos, int size, char *str, int highlighted) {
   // Fill buffer
   font_descriptor_t *font = &font_rom8x16;
   for(size_t i = 0; i < strlen(str); ++i) {
@@ -284,9 +384,9 @@ void draw_font(unsigned int x_pos,unsigned int y_pos, int size, char *str, void 
           continue;
         }
         if (highlighted == 0) {
-          fb[x_pos + size * (x + i * font->maxwidth)][y_pos + y * size] = font->bits[str[i] * font->height + y] & (1 << (15 - x)) ? 0xffff : 0x0;
+          origin_fb[x_pos + size * (x + i * font->maxwidth)][y_pos + y * size] = font->bits[str[i] * font->height + y] & (1 << (15 - x)) ? 0xffff : 0x0;
         } else {
-          fb[x_pos + size * (x + i * font->maxwidth)][y_pos + y * size] = font->bits[str[i] * font->height + y] & (1 << (15 - x)) ? 0x0 : 0xffff;
+          origin_fb[x_pos + size * (x + i * font->maxwidth)][y_pos + y * size] = font->bits[str[i] * font->height + y] & (1 << (15 - x)) ? 0x0 : 0xffff;
         }
       }
     }
@@ -294,41 +394,46 @@ void draw_font(unsigned int x_pos,unsigned int y_pos, int size, char *str, void 
 
 }
 
-void draw_buffer(uint16_t buffer[480][320], void *lcd) {
-  parlcd_write_cmd(lcd, 0x2c);
+void draw_buffer() {
+  parlcd_write_cmd(origin_lcd, 0x2c);
   for(size_t y = 0; y < SCREEN_HEIGHT; ++y) {
     for(size_t x = 0; x < SCREEN_WIDTH; ++x) {
-      parlcd_write_data(lcd, buffer[x][y]);
+      parlcd_write_data(origin_lcd, origin_fb[x][y]);
     }
   }
 }
 
-void debug_print(char *pattern, void *lcd, uint16_t fb[480][320], ...) {
+void debug_print(char *pattern, ...) {
     va_list args;
     char str[5555];
 
-    va_start(args, fb);
+    va_start(args, origin_fb);
     vsnprintf(str, sizeof(str), pattern, args);
     va_end(args);
 
-    draw_font(0, 0, 1, str, lcd, fb, 0);
-    draw_buffer(fb, lcd);
+    draw_font(0, 0, 1, str, 0);
+    draw_buffer();
 }
 
 int get_knob_click() {
-  unsigned char *mem_base = map_phys_address(SPILED_REG_BASE_PHYS, SPILED_REG_SIZE, 0);
-  uint8_t current_value = (*(volatile uint32_t*)(mem_base + SPILED_REG_KNOBS_8BIT_o) >> 26) & 0xff;
-  if(current_value == 1) {
+  static int debounce = 0;
+  uint8_t current_value = (*(volatile uint32_t*)(membase + SPILED_REG_KNOBS_8BIT_o) >> 26) & 0xff;
+  if(current_value == 1 && debounce == 1) {
+    debounce = 0;
     return 1;
+  } else if (current_value == 0) {
+    debounce = 1;
+    return 0;
+  } else {
+    return 0;
   }
-
+  
   return 0;
 }
 
 int get_knob_rotation() {
     static int old_value = -1;
-    unsigned char *mem_base = map_phys_address(SPILED_REG_BASE_PHYS, SPILED_REG_SIZE, 0);
-    uint8_t current_value = (*(volatile uint32_t*)(mem_base + SPILED_REG_KNOBS_8BIT_o) >> 16) & 0xff;
+    uint8_t current_value = (*(volatile uint32_t*)(membase + SPILED_REG_KNOBS_8BIT_o) >> 16) & 0xff;
 
     if (old_value == -1) {
         old_value = current_value;
@@ -348,12 +453,12 @@ int get_knob_rotation() {
     return (diff < 128) ? 1 : -1;
 }
 
-Img* ppm_load_image() {
+Img* ppm_load_image(char *path) {
     char buff[16];
     Img *img;
     FILE *fp;
     int rgbscanval;
-    fp = fopen("/tmp/kalasan1/background.ppm", "rb");
+    fp = fopen(path, "rb");
     if (!fp) {
         fprintf(stderr, "Unable to open img file n");
         return 1;
@@ -374,29 +479,29 @@ Img* ppm_load_image() {
     }
 
     if (fscanf(fp, "%d %d", &img->w, &img->h) != 2) {
-         fprintf(stderr, "Invalid image size\n");
-         return 1;
+        fprintf(stderr, "Invalid image size\n");
+        return 1;
     }
     if (fscanf(fp, "%d", &rgbscanval) != 1) {
-         fprintf(stderr, "Invalid max rgb value");
-         return 1;
+        fprintf(stderr, "Invalid max rgb value");
+        return 1;
     }
+
+    printf("%d %d\n", img->w, img->h);
 
     while (fgetc(fp) != '\n');
 
     img->data = (Pixel*)malloc(img->w * img->h * sizeof(Pixel));
 
-    printf("%d", img->w);
     if (!img) {
         fprintf(stderr, "Malloc fail\n");
         return 1;
     }
     if (fread(img->data, 3 * img->w, img->h, fp) != img->h) {
         //  fprintf(stderr, "Error loading img file '%s'\n", argv[1]);
-         return 1;
+        return 1;
     }
     
-    printf("%d\n", img->w);
 
     fclose(fp);
     return img;
@@ -410,10 +515,17 @@ uint32_t convert_rgb_to_hexa(Pixel rgb) {
   return (r << 11) | (g << 5) | b;
 }
 
-void write_img_to_buffer(Img* background_img, uint16_t fb[SCREEN_WIDTH][SCREEN_HEIGHT]) {
-  for(int i = 0; i < SCREEN_WIDTH; ++i) {
-    for(int j = 0; j < SCREEN_HEIGHT; ++j) {
-      fb[i][j] = convert_rgb_to_hexa(background_img->data[j * SCREEN_WIDTH + i]);
+void write_img_to_buffer(Img* img, int x_pos, int y_pos) {
+  if(img->h + y_pos < 0 || img->w + x_pos < 0 || x_pos >= SCREEN_WIDTH || y_pos >= SCREEN_HEIGHT) {
+    return; 
+  }
+  //printf("%d %d skib", img->w, img->h);
+  for(int i = 0; i < img->w; ++i) {
+    for(int j = 0; j < img->h; ++j) {
+      if (x_pos + i < 0 || y_pos + j < 0 || x_pos + i >= SCREEN_WIDTH || y_pos + j >= SCREEN_HEIGHT) {
+        continue;
+      }
+      origin_fb[x_pos + i][y_pos + j] = convert_rgb_to_hexa(img->data[j * img->w + i]);
     }
   }
 
