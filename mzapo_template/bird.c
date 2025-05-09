@@ -62,6 +62,8 @@
 #define GRAVITY_FORCE 4
 #define JUMP_PER_FRAME 5
 
+#define PATH "/tmp/kolomcon/"
+
 // membase
 unsigned char *membase;
 
@@ -188,12 +190,10 @@ void spilled_line_anim() {
 void program() {
   origin_lcd = map_phys_address(PARLCD_REG_BASE_PHYS, PARLCD_REG_SIZE, 0);
   membase = map_phys_address(SPILED_REG_BASE_PHYS, SPILED_REG_SIZE, 0);
-
-  background = ppm_load_image("/tmp/kalasan1/background.ppm");
-  bird1 = ppm_load_image("/tmp/kalasan1/bird1.ppm");
-  top_pipe = ppm_load_image("/tmp/kalasan1/top.ppm");
-  btm_pipe = ppm_load_image("/tmp/kalasan1/bottom.ppm");
-
+  background = ppm_load_image("/tmp/kolomcon/background.ppm");
+  bird1 = ppm_load_image("/tmp/kolomcon/bird1.ppm");
+  top_pipe = ppm_load_image("/tmp/kolomcon/top.ppm");
+  btm_pipe = ppm_load_image("/tmp/kolomcon/bottom.ppm");
   pipe_pool = calloc(sizeof(GameObject_t), 6);
   for (int i = 0; i < 3; ++i) {
     GameObject_t top;
@@ -303,24 +303,26 @@ void physics() {
   if(bird_obj->acceleration_x > 0) {
     bird_obj->acceleration_x -= JUMP_PER_FRAME; 
   }
-  if(bird_obj->acceleration_x < -25) {
-    bird_obj->acceleration_x = -25;
-  } else if(bird_obj->acceleration_x > 55) {
-    bird_obj->acceleration_x = 55;
+  if(bird_obj->acceleration_x < -10) {
+    bird_obj->acceleration_x = -10;
+  } else if(bird_obj->acceleration_x > 30) {
+    bird_obj->acceleration_x = 30;
   }
   bird_obj->y -= bird_obj->acceleration_x;
 }
 
 void update_pipes() {
   for(int i = 0; i < 3; ++i) {
-    pipe_pool[i].x -= 3;
-    pipe_pool[i + 3].x -= 3;
-    if(pipe_pool[i].x < -100) {
+    GameObject_t *pipe_top = &pipe_pool[i];
+    GameObject_t *pipe_bottom = &pipe_pool[i+3];
+    pipe_top->x -= 3;
+    pipe_bottom->x -= 3;
+    if(pipe_top->x < -100) {
       int rand_y = rand() % 190;
-      pipe_pool[i].y = -320 + rand_y;
-      pipe_pool[i + 3].y = -320 + rand_y + GAP;
-      pipe_pool[i].x = 620;
-      pipe_pool[i + 3].x = 620;
+      pipe_top->y = -320 + rand_y;
+      pipe_bottom->y = -320 + rand_y + GAP;
+      pipe_top->x = 620;
+      pipe_bottom->x = 620;
     }
   }
 }
@@ -338,12 +340,12 @@ int play_singleplayer() {
     physics(); // TODO: think about values 
     clicked = get_knob_click();
     if (clicked == 1) {
-      bird_obj->acceleration_x += 50;
+      bird_obj->acceleration_x += 30;
     }
     update_pipes();
-    redraw_game();
     if (check_player_lost() == 1) health--; // Maybe ?
     if (health < 0) break;
+    redraw_game();
   }
   // TODO: End screen
 }
@@ -353,8 +355,15 @@ int check_player_lost() {
     GameObject_t pipe = pipe_pool[i]; 
     // TODO: think if bug should count as feature - hitboxes are bad
     if (!(bird_obj->x + bird_obj->img->w > pipe.x && bird_obj->x < pipe.x + pipe.img->w)) continue;  
-    if (bird_obj->y > pipe.y && bird_obj->y + bird_obj->img->h < pipe.y + pipe.img->h) return 1;
+    if (bird_obj->y > pipe.y && bird_obj->y + bird_obj->img->h > pipe.y + pipe.img->h) return 1;
   }
+  // for(int i = 0; i < 3; ++i) {
+  //   GameObject_t *pipe_top = &pipe_pool[i];
+  //   GameObject_t *pipe_bottom = &pipe_pool[i+3]; 
+  //   if (!(bird_obj->x + bird_obj->img->w > pipe_top->x && bird_obj->x < pipe_top->x + pipe_top->img->w)) continue;  
+  //   if (bird_obj->y < pipe_top->y + pipe_top->img->h) return 1;
+  //   else if (bird_obj->y + bird_obj->img->h > pipe_bottom->y) return 1;
+  // }
   return 0;
 }
 
