@@ -64,8 +64,14 @@
 
 #define PATH "/tmp/kolomcon/"
 
+#define RED_KNOB 2
+#define BLUE_KNOB 0
+
 // membase
 unsigned char *membase;
+
+unsigned int player1_score = 0;
+unsigned int player2_score = 0;
 
 //header
 typedef struct {
@@ -104,6 +110,9 @@ int get_knob_rotation();
 Img* ppm_load_image(char *path);
 void write_img_to_buffer(Img* background_img, int x_pos, int y_pos);
 void exit_game();
+void add_text_to_buffer(char *pattern, ...);
+void restart_game_objects();
+
 // -header
 
 // drawing
@@ -119,6 +128,7 @@ Img *btm_pipe;
 // Game objects
 GameObject_t *pipe_pool;
 GameObject_t *bird_obj;
+GameObject_t *bird_obj2;
 
 int main(int argc, char *argv[])
 {
@@ -140,7 +150,6 @@ void serialize() {
   /* Try to acquire lock the first */
   if (serialize_lock(1) <= 0) {
     printf("System is occupied\n");
-
     if (1) {
       printf("Waitting\n");
       /* Wait till application hold_knobs_valueing lock releases it or exits */
@@ -210,19 +219,36 @@ void program() {
 
   bird_obj = calloc(sizeof(GameObject_t), 1);
   bird_obj->img = bird1;
+
+  while (1) {
+    options_t options;
+    main_menu(&options, origin_lcd);
+    switch (options.player_count) {
+      case 1: 
+        play_singleplayer();
+        break;
+      case 2:
+        // play_multiplayer();
+        break;
+    }
+  }
+}
+
+void restart_game_objects() {
+  for (int i = 0; i < 3; ++i) {
+    GameObject_t *top = &pipe_pool[i];
+    GameObject_t *btm = &pipe_pool[i+3];
+    top->x = 480 + (i * (80 + 160));
+    btm->x = 480 + (i * (80 + 160));
+    top->y = -200;
+    btm->y = top->y + GAP;
+    top->img = top_pipe;
+    btm->img = btm_pipe;
+  }
+
   bird_obj->x = 75;
   bird_obj->y = 145;
 
-  options_t options;
-  main_menu(&options, origin_lcd);
-  switch (options.player_count) {
-    case 1: 
-      play_singleplayer();
-      break;
-    case 2:
-      // play_multiplayer();
-      break;
-  }
 }
 
 void main_menu(options_t *opts, void *lcd) {
@@ -243,7 +269,7 @@ void main_menu(options_t *opts, void *lcd) {
   while (1) {
     draw_buffer();
     int rot = get_knob_rotation();
-    click_value = get_knob_click();
+    click_value = get_knob_click(RED_KNOB);
     if (rot == 0) {
       if(click_value == 1) {
         break;
@@ -283,12 +309,13 @@ void main_menu(options_t *opts, void *lcd) {
 
 }
 
-void redraw_game() {
+void redraw_game_singleplayer() {
   write_img_to_buffer(background, 0, 0);
   write_img_to_buffer(bird_obj->img, bird_obj->x, bird_obj->y);
   for (int i = 0; i < 6; ++i) {
     write_img_to_buffer(pipe_pool[i].img, pipe_pool[i].x, pipe_pool[i].y);
   }
+  add_text_to_buffer("Player score %u", player1_score);
   draw_buffer();
 }
 
@@ -298,17 +325,17 @@ void exit_game() {
   exit(0);
 }
 
-void physics() {
-  bird_obj->acceleration_x -= GRAVITY_FORCE;
-  if(bird_obj->acceleration_x > 0) {
-    bird_obj->acceleration_x -= JUMP_PER_FRAME; 
+void physics(GameObject_t *player_obj) {
+  player_obj->acceleration_x -= GRAVITY_FORCE;
+  if(player_obj->acceleration_x > 0) {
+    player_obj->acceleration_x -= JUMP_PER_FRAME; 
   }
-  if(bird_obj->acceleration_x < -10) {
-    bird_obj->acceleration_x = -10;
-  } else if(bird_obj->acceleration_x > 30) {
-    bird_obj->acceleration_x = 30;
+  if(player_obj->acceleration_x < -10) {
+    player_obj->acceleration_x = -10;
+  } else if(player_obj->acceleration_x > 30) {
+    player_obj->acceleration_x = 30;
   }
-  bird_obj->y -= bird_obj->acceleration_x;
+  player_obj->y -= player_obj->acceleration_x;
 }
 
 void update_pipes() {
@@ -324,46 +351,49 @@ void update_pipes() {
       pipe_top->x = 620;
       pipe_bottom->x = 620;
     }
+    if (pipe_top->x > 65 && pipe_top->x < 69) {
+      player1_score += 1;
+      player2_score += 1;
+    }
   }
 }
 
+
 int play_singleplayer() {
-  int health = 3;
-  redraw_game();
+  player1_score = 0;
+  int health = 1;
+  restart_game_objects();
+  redraw_game_singleplayer();
   int clicked = 0;
   sleep(1);
   while (clicked == 0) {
-    clicked = get_knob_click();
+    clicked = get_knob_click(RED_KNOB);
   }
 
   while (1) {
-    physics(); // TODO: think about values 
-    clicked = get_knob_click();
+    physics(bird_obj); // TODO: think about values 
+    clicked = get_knob_click(RED_KNOB);
     if (clicked == 1) {
       bird_obj->acceleration_x += 30;
     }
     update_pipes();
     if (check_player_lost() == 1) health--; // Maybe ?
     if (health < 0) break;
-    redraw_game();
+    redraw_game_singleplayer();
   }
-  // TODO: End screen
+  return player1_score;
 }
+
+
 int check_player_lost() {
   if (bird_obj->y > SCREEN_HEIGHT || bird_obj->y < 0) return 1;
-  for (int i = 0; i < 6; ++i) {
-    GameObject_t pipe = pipe_pool[i]; 
-    // TODO: think if bug should count as feature - hitboxes are bad
-    if (!(bird_obj->x + bird_obj->img->w > pipe.x && bird_obj->x < pipe.x + pipe.img->w)) continue;  
-    if (bird_obj->y > pipe.y && bird_obj->y + bird_obj->img->h > pipe.y + pipe.img->h) return 1;
+  for(int i = 0; i < 3; ++i) {
+    GameObject_t *pipe_top = &pipe_pool[i];
+    GameObject_t *pipe_bottom = &pipe_pool[i+3]; 
+    if (!(bird_obj->x + bird_obj->img->w > pipe_top->x && bird_obj->x < pipe_top->x + pipe_top->img->w)) continue;  
+    if (bird_obj->y < pipe_top->y + pipe_top->img->h) return 1;
+    else if (bird_obj->y + bird_obj->img->h > pipe_bottom->y) return 1;
   }
-  // for(int i = 0; i < 3; ++i) {
-  //   GameObject_t *pipe_top = &pipe_pool[i];
-  //   GameObject_t *pipe_bottom = &pipe_pool[i+3]; 
-  //   if (!(bird_obj->x + bird_obj->img->w > pipe_top->x && bird_obj->x < pipe_top->x + pipe_top->img->w)) continue;  
-  //   if (bird_obj->y < pipe_top->y + pipe_top->img->h) return 1;
-  //   else if (bird_obj->y + bird_obj->img->h > pipe_bottom->y) return 1;
-  // }
   return 0;
 }
 
@@ -439,9 +469,21 @@ void debug_print(char *pattern, ...) {
     draw_buffer();
 }
 
-int get_knob_click() {
+void add_text_to_buffer(char *pattern, ...) {
+    va_list args;
+    char str[5555];
+
+    va_start(args, origin_fb);
+    vsnprintf(str, sizeof(str), pattern, args);
+    va_end(args);
+
+    draw_font(0, 0, 1, str, 0);
+}
+
+int get_knob_click(int knob_num) {
+  if (knob_num != 0 && knob_num != 2) return 0;
   static int debounce = 0;
-  uint8_t current_value = (*(volatile uint32_t*)(membase + SPILED_REG_KNOBS_8BIT_o) >> 26) & 0xff;
+  uint8_t current_value = (*(volatile uint32_t*)(membase + SPILED_REG_KNOBS_8BIT_o) >> (24 + knob_num)) & 0xff;
   if(current_value == 1 && debounce == 1) {
     debounce = 0;
     return 1;
