@@ -219,6 +219,8 @@ void program() {
 
   bird_obj = calloc(sizeof(GameObject_t), 1);
   bird_obj->img = bird1;
+  bird_obj2 = calloc(sizeof(GameObject_t), 1);
+  bird_obj2->img = bird1;
 
   while (1) {
     options_t options;
@@ -228,14 +230,28 @@ void program() {
         play_singleplayer();
         break;
       case 2:
-        // play_multiplayer();
+        play_multiplayer();
         break;
     }
   }
 }
 
 void restart_game_objects() {
-  for (int i = 0; i < 3; ++i) {
+  restart_pipes();
+  bird_obj->x = 75;
+  bird_obj->y = 145;
+}
+
+void restart_game_objects_multi() {
+  restart_pipes();
+  bird_obj2->x = 75;
+  bird_obj2->y = 160;
+  bird_obj->x = 75;
+  bird_obj->y = 120;
+}
+
+void restart_pipes() {
+ for (int i = 0; i < 3; ++i) {
     GameObject_t *top = &pipe_pool[i];
     GameObject_t *btm = &pipe_pool[i+3];
     top->x = 480 + (i * (80 + 160));
@@ -245,10 +261,6 @@ void restart_game_objects() {
     top->img = top_pipe;
     btm->img = btm_pipe;
   }
-
-  bird_obj->x = 75;
-  bird_obj->y = 145;
-
 }
 
 void main_menu(options_t *opts, void *lcd) {
@@ -319,6 +331,18 @@ void redraw_game_singleplayer() {
   draw_buffer();
 }
 
+
+void redraw_game_multiplayer() {
+  write_img_to_buffer(background, 0, 0);
+  write_img_to_buffer(bird_obj->img, bird_obj->x, bird_obj->y);
+  write_img_to_buffer(bird_obj2->img, bird_obj2->x, bird_obj2->y);
+  for (int i = 0; i < 6; ++i) {
+    write_img_to_buffer(pipe_pool[i].img, pipe_pool[i].x, pipe_pool[i].y);
+  }
+  add_text_to_buffer("Player score Red: %u | Blue %u", player1_score, player2_score);
+  draw_buffer();
+}
+
 void exit_game() {
   memset(origin_fb, 0x0, sizeof(origin_fb));
   draw_buffer();
@@ -358,6 +382,50 @@ void update_pipes() {
   }
 }
 
+int play_multiplayer() {
+  player1_score = 0;
+  player2_score = 0;
+  int health = 1;
+  int health2 = 1;
+  restart_game_objects_multi();
+  redraw_game_multiplayer();
+  int clicked = 0;
+  sleep(1);
+  while (clicked == 0) {
+    clicked = get_knob_click(RED_KNOB);
+  }
+
+  while (1) {
+    if (health > 0) {
+      physics(bird_obj);
+      clicked = get_knob_click(RED_KNOB);
+      if (clicked == 1) {
+        bird_obj->acceleration_x += 30;
+      }
+    }
+
+    if (health2 > 0) {
+      physics(bird_obj2);
+      clicked = get_knob_click(BLUE_KNOB);
+      if (clicked == 1) {
+        bird_obj2->acceleration_x += 30;
+      }  
+    } 
+    
+    update_pipes();
+    int check = check_multiplayer_lost();
+    if (check == 1) health--;
+    if (check == 2) health2--;
+    if (check == 3) {
+      health--;
+      health2--;
+    }
+    if (health + health2 <= 0) break;
+    redraw_game_multiplayer();
+  }
+  return player1_score;
+}
+
 
 int play_singleplayer() {
   player1_score = 0;
@@ -386,13 +454,26 @@ int play_singleplayer() {
 
 
 int check_player_lost() {
-  if (bird_obj->y > SCREEN_HEIGHT || bird_obj->y < 0) return 1;
+  return check_hitbox_hit(bird_obj);
+}
+
+int check_multiplayer_lost() {
+  int hit1 = check_hitbox_hit(bird_obj);
+  int hit2 = check_hitbox_hit(bird_obj2);
+  if (hit1 + hit2 == 2) return 3;
+  if (hit1 == 1) return 1;
+  if (hit2 == 1) return 2;
+  return 0;
+}
+
+int check_hitbox_hit(GameObject_t *player) {
+if (player->y > SCREEN_HEIGHT || player->y < 0) return 1;
   for(int i = 0; i < 3; ++i) {
     GameObject_t *pipe_top = &pipe_pool[i];
     GameObject_t *pipe_bottom = &pipe_pool[i+3]; 
-    if (!(bird_obj->x + bird_obj->img->w > pipe_top->x && bird_obj->x < pipe_top->x + pipe_top->img->w)) continue;  
-    if (bird_obj->y < pipe_top->y + pipe_top->img->h) return 1;
-    else if (bird_obj->y + bird_obj->img->h > pipe_bottom->y) return 1;
+    if (!(player->x + player->img->w > pipe_top->x && player->x < pipe_top->x + pipe_top->img->w)) continue;  
+    if (player->y < pipe_top->y + pipe_top->img->h) return 1;
+    else if (player->y + player->img->h > pipe_bottom->y) return 1;
   }
   return 0;
 }
