@@ -55,6 +55,12 @@
 #define GRAVITY_FORCE 4
 #define JUMP_PER_FRAME 5
 
+//Utils
+ #define max(a,b) \
+   ({ __typeof__ (a) _a = (a); \
+       __typeof__ (b) _b = (b); \
+     _a > _b ? _a : _b; })
+
 #define PATH "/tmp/kolomcon/"
 
 #define RED_KNOB 2
@@ -67,7 +73,7 @@ unsigned int highest_player_score = 0;
 
 //header
 typedef struct {
-  int player_count;
+  int game_mode;
   char p;  
 } options_t;
 
@@ -104,7 +110,10 @@ void write_img_to_buffer(Img* background_img, int x_pos, int y_pos);
 void exit_game();
 void add_text_to_buffer(char *pattern, ...);
 void restart_game_objects();
-
+void redraw_stats();
+void redraw_game_singleplayer(unsigned int player1_score);
+void redraw_game_multiplayer(unsigned int player1_score, unsigned int player2_score);
+void physics(GameObject_t *player_obj);
 // -header
 
 // drawing
@@ -217,12 +226,15 @@ void program() {
   while (1) {
     options_t options;
     main_menu(&options, origin_lcd);
-    switch (options.player_count) {
+    switch (options.game_mode) {
       case 1: 
         highest_player_score = max(highest_player_score, play_singleplayer());
         break;
       case 2:
-        highest_player_score = max(highest_player_score, play_multiplayer(););
+        highest_player_score = max(highest_player_score, play_multiplayer());
+        break;
+      case 3:
+        draw_stats();
         break;
     }
   }
@@ -298,19 +310,32 @@ void main_menu(options_t *opts, void *lcd) {
   }
   switch (highlited_index) {
     case 0:
-      opts->player_count = 1;  
+      opts->game_mode = 1;  
       break;
     case 1:
-      opts->player_count = 2;
+      opts->game_mode = 2;
       break;
     case 2:
-      // TODO write stats
+      opts->game_mode = 3;
       break;
     case 3:
       exit_game();
       break;
   }
 
+}
+
+void draw_stats() {
+  while(1) {
+    write_img_to_buffer(background, 0, 0);
+    int click_value = get_knob_click(RED_KNOB);
+    if(click_value == 1) {
+      break;
+    }
+    add_text_to_buffer("Highest score is %u", highest_player_score);
+    draw_buffer();
+  }
+  
 }
 
 void redraw_game_singleplayer(unsigned int player1_score) {
