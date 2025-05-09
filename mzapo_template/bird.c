@@ -2,15 +2,8 @@
   Project main function template for MicroZed based MZ_APO board
   designed by Petr Porazil at PiKRON
 
-  change_me.c      - main file
-
-  include your name there and license for distribution.
-
-  Remove next text: This line should not appear in submitted
-  work and project name should be change to match real application.
-  If this text is there I want 10 points subtracted from final
-  evaluation.
-
+  
+  
  *******************************************************************/
 
 #define _POSIX_C_SOURCE 200112L
@@ -70,8 +63,7 @@
 // membase
 unsigned char *membase;
 
-unsigned int player1_score = 0;
-unsigned int player2_score = 0;
+unsigned int highest_player_score = 0;
 
 //header
 typedef struct {
@@ -227,10 +219,10 @@ void program() {
     main_menu(&options, origin_lcd);
     switch (options.player_count) {
       case 1: 
-        play_singleplayer();
+        highest_player_score = max(highest_player_score, play_singleplayer());
         break;
       case 2:
-        play_multiplayer();
+        highest_player_score = max(highest_player_score, play_multiplayer(););
         break;
     }
   }
@@ -283,7 +275,7 @@ void main_menu(options_t *opts, void *lcd) {
     int rot = get_knob_rotation();
     click_value = get_knob_click(RED_KNOB);
     if (rot == 0) {
-      if(click_value == 1) {
+      if(click_value == 1 && highlited_index != -1) {
         break;
       }
       draw_buffer();
@@ -321,7 +313,7 @@ void main_menu(options_t *opts, void *lcd) {
 
 }
 
-void redraw_game_singleplayer() {
+void redraw_game_singleplayer(unsigned int player1_score) {
   write_img_to_buffer(background, 0, 0);
   write_img_to_buffer(bird_obj->img, bird_obj->x, bird_obj->y);
   for (int i = 0; i < 6; ++i) {
@@ -332,7 +324,7 @@ void redraw_game_singleplayer() {
 }
 
 
-void redraw_game_multiplayer() {
+void redraw_game_multiplayer(unsigned int player1_score, unsigned int player2_score) {
   write_img_to_buffer(background, 0, 0);
   write_img_to_buffer(bird_obj->img, bird_obj->x, bird_obj->y);
   write_img_to_buffer(bird_obj2->img, bird_obj2->x, bird_obj2->y);
@@ -375,20 +367,16 @@ void update_pipes() {
       pipe_top->x = 620;
       pipe_bottom->x = 620;
     }
-    if (pipe_top->x > 65 && pipe_top->x < 69) {
-      player1_score += 1;
-      player2_score += 1;
-    }
   }
 }
 
 int play_multiplayer() {
-  player1_score = 0;
-  player2_score = 0;
+  unsigned int player1_score = 0;
+  unsigned int player2_score = 0;
   int health = 1;
   int health2 = 1;
   restart_game_objects_multi();
-  redraw_game_multiplayer();
+  redraw_game_multiplayer(player1_score, player2_score);
   int clicked = 0;
   sleep(1);
   while (clicked == 0) {
@@ -413,25 +401,32 @@ int play_multiplayer() {
     } 
     
     update_pipes();
-    int check = check_multiplayer_lost();
-    if (check == 1) health--;
-    if (check == 2) health2--;
-    if (check == 3) {
+    int check = check_player_lost(bird_obj);
+    if (check == -1 && health > 0) {
       health--;
+    } 
+    else if(check == 1 && health > 0) {
+      player1_score++;
+    }
+    check = check_player_lost(bird_obj2);
+    if (check == -1 && health2 > 0) {
       health2--;
+    } 
+    else if(check == 1 && health2 > 0) {
+      player2_score++;
     }
     if (health + health2 <= 0) break;
-    redraw_game_multiplayer();
+    redraw_game_multiplayer(player1_score, player2_score);
   }
-  return player1_score;
+  return (player1_score > player2_score ? player1_score : player2_score);
 }
 
 
 int play_singleplayer() {
-  player1_score = 0;
+  unsigned int player1_score = 0;
   int health = 1;
   restart_game_objects();
-  redraw_game_singleplayer();
+  redraw_game_singleplayer(player1_score);
   int clicked = 0;
   sleep(1);
   while (clicked == 0) {
@@ -445,35 +440,37 @@ int play_singleplayer() {
       bird_obj->acceleration_x += 30;
     }
     update_pipes();
-    if (check_player_lost() == 1) health--; // Maybe ?
+    if (check_player_lost(bird_obj) == -1) health--; // Maybe ?
+    else if(check_player_lost(bird_obj) == 1 && health > 0) player1_score++;
     if (health < 0) break;
-    redraw_game_singleplayer();
+    redraw_game_singleplayer(player1_score);
   }
   return player1_score;
 }
 
 
-int check_player_lost() {
-  return check_hitbox_hit(bird_obj);
+int check_player_lost(GameObject_t *player_obj) {
+  return check_hitbox_hit(player_obj);
 }
 
 int check_multiplayer_lost() {
   int hit1 = check_hitbox_hit(bird_obj);
   int hit2 = check_hitbox_hit(bird_obj2);
-  if (hit1 + hit2 == 2) return 3;
-  if (hit1 == 1) return 1;
-  if (hit2 == 1) return 2;
+  if (hit1 + hit2 == -2) return 3;
+  if (hit1 == -1) return 1;
+  if (hit2 == -1) return 2;
   return 0;
 }
 
 int check_hitbox_hit(GameObject_t *player) {
-if (player->y > SCREEN_HEIGHT || player->y < 0) return 1;
+if (player->y > SCREEN_HEIGHT || player->y < 0) return -1;
   for(int i = 0; i < 3; ++i) {
     GameObject_t *pipe_top = &pipe_pool[i];
     GameObject_t *pipe_bottom = &pipe_pool[i+3]; 
+    if(pipe_top->x > 65 && pipe_top->x < 69) return 1;
     if (!(player->x + player->img->w > pipe_top->x && player->x < pipe_top->x + pipe_top->img->w)) continue;  
-    if (player->y < pipe_top->y + pipe_top->img->h) return 1;
-    else if (player->y + player->img->h > pipe_bottom->y) return 1;
+    if (player->y < pipe_top->y + pipe_top->img->h) return -1;
+    else if (player->y + player->img->h > pipe_bottom->y) return -1;
   }
   return 0;
 }
