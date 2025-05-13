@@ -56,6 +56,7 @@ void program() {
                 highest_player_score = max(highest_player_score, play_multiplayer());
                 break;
             case 3:
+                printf("Game mode %d\n", options.game_mode);
                 draw_stats();
                 break;
         }

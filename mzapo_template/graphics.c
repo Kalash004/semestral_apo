@@ -81,16 +81,18 @@ void draw_menu_bars(int highlighted, int x, int y, int padding) {
 }
 
 void draw_stats() {
-  while(1) {
     int debounce = 1;
     write_img_to_buffer(background, 0, 0);
     int click_value = get_knob_click(RED_KNOB, &debounce);
-    if(click_value == 1) {
-      break;
-    }
     add_text_to_buffer("Highest score is %u", highest_player_score);
     draw_buffer();
-  }
+    sleep(1);
+    while(1) {
+      int click_value = get_knob_click(RED_KNOB, &debounce);
+      if(click_value == 1) {
+        break;
+      }
+    }
   
 }
 
