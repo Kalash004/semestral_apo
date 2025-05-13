@@ -1,54 +1,83 @@
-#include "image.h"
-#include <stdint.h>
-#include <stdlib.h>
-#include <string.h>
-#include "mzapo_parlcd.h"
 
-extern void *origin_lcd;
-extern uint16_t origin_fb[480][320];
+#include "img.h"
 
-void draw_img(GameObject_t *obj) {
-  if (!obj || !obj->img) return;
 
-  int start_x = obj->x;
-  int start_y = obj->y;
-  int w = obj->img->w;
-  int h = obj->img->h;
+uint32_t convert_rgb_to_hexa(Pixel rgb) {
+    uint16_t r = ((uint32_t)rgb.red  >> 3) & 0x1F; // 5 bits
+    uint16_t g = ((uint32_t)rgb.green >> 2) & 0x3F; // 6 bits
+    uint16_t b = ((uint32_t)rgb.blue >> 3) & 0x1F; // 5 bits
 
-  for (int y = 0; y < h; ++y) {
-    for (int x = 0; x < w; ++x) {
-      int px = start_x + x;
-      int py = start_y + y;
+    return (r << 11) | (g << 5) | b;
+}
 
-      if (px < 0 || py < 0 || px >= 320 || py >= 480) continue;
+Img* ppm_load_image(char *path) {
+    char buff[16];
+    Img *img;
+    FILE *fp;
+    int rgbscanval;
 
-      uint16_t pixel = obj->img->data[y * w + x];
-      if (pixel != 0xFFFF) { // Assuming 0xFFFF is used for transparency
-        origin_fb[py][px] = pixel;
-      }
+    fp = fopen(path, "rb");
+    if (!fp) {
+        fprintf(stderr, "Unable to open img file\n");
+        return NULL;
     }
-  }
-}
 
-Img *load_image_from_rgb565_data(const uint16_t *data, int width, int height) {
-  Img *img = (Img *)malloc(sizeof(Img));
-  if (!img) return NULL;
+    if (!fgets(buff, sizeof(buff), fp)) {
+        fclose(fp);
+        return NULL;
+    }
 
-  img->w = width;
-  img->h = height;
-  img->data = (uint16_t *)malloc(width * height * sizeof(uint16_t));
+    if (buff[0] != 'P' || buff[1] != '6') {
+        fprintf(stderr, "Invalid P6 format\n");
+        fclose(fp);
+        return NULL;
+    }
 
-  if (!img->data) {
-    free(img);
-    return NULL;
-  }
+    img = (Img *)malloc(sizeof(Img));
+    if (!img) {
+        fprintf(stderr, "Malloc fail\n");
+        fclose(fp);
+        return NULL;
+    }
 
-  memcpy(img->data, data, width * height * sizeof(uint16_t));
-  return img;
-}
+    char c;
+    if (fscanf(fp, "%c", &c) == 1 && c == '#') {
+        while (fscanf(fp, "%c", &c) == 1 && c != '\n') {}
+    }
+    fseek(fp, -1, SEEK_CUR);
 
-void free_image(Img *img) {
-  if (!img) return;
-  if (img->data) free(img->data);
-  free(img);
+    if (fscanf(fp, "%d %d", &img->w, &img->h) != 2) {
+        fprintf(stderr, "Invalid image size\n");
+        free(img);
+        fclose(fp);
+        return NULL;
+    }
+
+    if (fscanf(fp, "%d", &rgbscanval) != 1) {
+        fprintf(stderr, "Invalid max rgb value\n");
+        free(img);
+        fclose(fp);
+        return NULL;
+    }
+
+    while (fgetc(fp) != '\n');
+
+    img->data = (Pixel*)malloc(img->w * img->h * sizeof(Pixel));
+    if (!img->data) {
+        fprintf(stderr, "Image data malloc fail\n");
+        free(img);
+        fclose(fp);
+        return NULL;
+    }
+
+    if (fread(img->data, 3 * img->w, img->h, fp) != img->h) {
+        fprintf(stderr, "Error loading img file\n");
+        free(img->data);
+        free(img);
+        fclose(fp);
+        return NULL;
+    }
+
+    fclose(fp);
+    return img;
 }

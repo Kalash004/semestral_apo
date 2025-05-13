@@ -1,41 +1,5 @@
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <stdint.h>
-#include <time.h>
-#include <string.h>
-
-#include "mzapo_parlcd.h"
-#include "mzapo_phys.h"
-#include "mzapo_regs.h"
-
-#include "game.h"
-#include "graphics.h"
-#include "input.h"
-#include "utils.h"
-#include "img.h"
-#include "serialize_lock.h"
-
-#define RED_KNOB 2
-#define BLUE_KNOB 0
-
-unsigned char *membase;
-void *origin_lcd;
-uint16_t origin_fb[SCREEN_WIDTH][SCREEN_HEIGHT] = {0xffff};
-
-Img *background;
-Img *bird1;
-Img *bird_red;
-Img *bird_blue;
-Img *top_pipe;
-Img *btm_pipe;
-
-GameObject_t *pipe_pool;
-GameObject_t *bird_obj;
-GameObject_t *bird_obj2;
-
-unsigned int highest_player_score = 0;
+#include "main.h"
 
 int main(int argc, char *argv[])
 {
@@ -96,4 +60,69 @@ void program() {
                 break;
         }
     }
+}
+
+void main_menu(options_t *opts, void *lcd) {
+  // Frame buffer
+  uint16_t origin_fb[480][320] = {0x0};
+  //memset(origin_fb, 0x0, sizeof(origin_fb));
+  write_img_to_buffer(background, 0, 0);
+  draw_buffer();
+  volatile uint32_t knobs_value = 0;
+
+ // Big fonts
+  int highlited_index = -1;
+  draw_font(100, 10, 3, "FLAPPY BIRD",1);
+  draw_menu_bars(highlited_index, 100, 100, 40);
+  draw_buffer();
+  // struct timespec loop_delay = {.tv_sec = 0, .tv_nsec = 200 * 1000 * 1000};
+  int click_value = 0;
+  while (1) {
+    int debounce = 1;
+    draw_buffer();
+    int rot = get_knob_rotation();
+    click_value = get_knob_click(RED_KNOB, &debounce);
+    if (rot == 0) {
+      if(click_value == 1 && highlited_index != -1) {
+        break;
+      }
+      draw_buffer();
+      continue;
+    }
+    if (rot == -1) {
+      highlited_index = (highlited_index == -1 ? 0 : highlited_index - 1);
+      highlited_index = (highlited_index + 4) % 4;
+      draw_menu_bars(highlited_index, 100, 100, 40);
+      draw_buffer();
+    } 
+    if (rot == 1) {
+      highlited_index += 1;
+      highlited_index = highlited_index % 4;
+      draw_menu_bars(highlited_index, 100, 100, 40);
+      draw_buffer();
+    } 
+    
+    rot = 0;
+  }
+  switch (highlited_index) {
+    case 0:
+      opts->game_mode = 1;  
+      break;
+    case 1:
+      opts->game_mode = 2;
+      break;
+    case 2:
+      opts->game_mode = 3;
+      break;
+    case 3:
+      exit_game();
+      break;
+  }
+
+}
+
+void exit_game() {
+  memset(origin_fb, 0x0, sizeof(origin_fb));
+  draw_buffer();
+  exit(0);
 }
