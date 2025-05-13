@@ -113,7 +113,8 @@ void restart_game_objects();
 void redraw_stats();
 void redraw_game_singleplayer(unsigned int player1_score);
 void redraw_game_multiplayer(unsigned int player1_score, unsigned int player2_score);
-void physics(GameObject_t *player_obj);
+void physics(GameObject_t *player_obj, long long delta_time);
+int get_knob_multi_click(int knob_num, int *red_debounce, int *blue_debounce);
 // -header
 
 // drawing
@@ -123,6 +124,8 @@ void *origin_lcd;
 // images
 Img *background;
 Img *bird1;
+Img *bird_red;
+Img *bird_blue;
 Img *top_pipe;
 Img *btm_pipe;
 
@@ -204,6 +207,8 @@ void program() {
   bird1 = ppm_load_image("/tmp/kolomcon/bird1.ppm");
   top_pipe = ppm_load_image("/tmp/kolomcon/top.ppm");
   btm_pipe = ppm_load_image("/tmp/kolomcon/bottom.ppm");
+  bird_blue = ppm_load_image("/tmp/kolomcon/bird_blue.ppm");
+  bird_red = ppm_load_image("/tmp/kolomcon/bird_red.ppm");
   pipe_pool = calloc(sizeof(GameObject_t), 6);
   for (int i = 0; i < 3; ++i) {
     GameObject_t top;
@@ -244,9 +249,12 @@ void restart_game_objects() {
   restart_pipes();
   bird_obj->x = 75;
   bird_obj->y = 145;
+  bird_obj->img = bird1;
 }
 
 void restart_game_objects_multi() {
+  bird_obj->img = bird_red;
+  bird_obj2->img = bird_blue;
   restart_pipes();
   bird_obj2->x = 75;
   bird_obj2->y = 160;
@@ -283,9 +291,10 @@ void main_menu(options_t *opts, void *lcd) {
   // struct timespec loop_delay = {.tv_sec = 0, .tv_nsec = 200 * 1000 * 1000};
   int click_value = 0;
   while (1) {
+    int debounce = 1;
     draw_buffer();
     int rot = get_knob_rotation();
-    click_value = get_knob_click(RED_KNOB);
+    click_value = get_knob_click(RED_KNOB, &debounce);
     if (rot == 0) {
       if(click_value == 1 && highlited_index != -1) {
         break;
@@ -327,8 +336,9 @@ void main_menu(options_t *opts, void *lcd) {
 
 void draw_stats() {
   while(1) {
+    int debounce = 1;
     write_img_to_buffer(background, 0, 0);
-    int click_value = get_knob_click(RED_KNOB);
+    int click_value = get_knob_click(RED_KNOB, &debounce);
     if(click_value == 1) {
       break;
     }
@@ -356,7 +366,7 @@ void redraw_game_multiplayer(unsigned int player1_score, unsigned int player2_sc
   for (int i = 0; i < 6; ++i) {
     write_img_to_buffer(pipe_pool[i].img, pipe_pool[i].x, pipe_pool[i].y);
   }
-  add_text_to_buffer("Player score Red: %u | Blue %u", player1_score, player2_score);
+  //add_text_to_buffer("Player score Red: %u | Blue %u", player1_score, player2_score);
   draw_buffer();
 }
 
@@ -366,17 +376,19 @@ void exit_game() {
   exit(0);
 }
 
-void physics(GameObject_t *player_obj) {
-  player_obj->acceleration_x -= GRAVITY_FORCE;
+// give last time and current time
+void physics(GameObject_t *player_obj, long long delta_time) {
+  printf("Delta time: %li\n",delta_time);
+  player_obj->acceleration_x -= GRAVITY_FORCE * 1;
   if(player_obj->acceleration_x > 0) {
-    player_obj->acceleration_x -= JUMP_PER_FRAME; 
+    player_obj->acceleration_x -= JUMP_PER_FRAME * 1; 
   }
   if(player_obj->acceleration_x < -10) {
     player_obj->acceleration_x = -10;
   } else if(player_obj->acceleration_x > 30) {
     player_obj->acceleration_x = 30;
   }
-  player_obj->y -= player_obj->acceleration_x;
+  player_obj->y -= player_obj->acceleration_x * 1;
 }
 
 void update_pipes() {
@@ -400,31 +412,41 @@ int play_multiplayer() {
   unsigned int player2_score = 0;
   int health = 1;
   int health2 = 1;
+  int red_debounce = 1;
+  int blue_debounce = 1;
   restart_game_objects_multi();
   redraw_game_multiplayer(player1_score, player2_score);
   int clicked = 0;
   sleep(1);
   while (clicked == 0) {
-    clicked = get_knob_click(RED_KNOB);
+    clicked = get_knob_click(RED_KNOB, &red_debounce);
   }
-
+  struct timespec old, new; 
   while (1) {
-    if (health > 0) {
-      physics(bird_obj);
-      clicked = get_knob_click(RED_KNOB);
-      if (clicked == 1) {
-        bird_obj->acceleration_x += 30;
-      }
+    clock_gettime(CLOCK_MONOTONIC, &new);
+    long long start_ns = old.tv_sec * 1e9 + old.tv_nsec;
+    long long end_ns = new.tv_sec * 1e9 + new.tv_nsec;
+    long long delta_time_ns = end_ns - start_ns;
+    printf("Time: %lli - %lli = %lli\n", end_ns, start_ns, delta_time_ns);
+    //int clicked_red = get_knob_click(RED_KNOB, &red_debounce);
+    //int clicked_blue = get_knob_click(BLUE_KNOB, &blue_debounce);
+    int clicked_red = get_knob_click(RED_KNOB, &red_debounce);
+    if (clicked_red == 1) {
+      bird_obj->acceleration_x += 30;
     }
+    int clicked_blue = get_knob_click(BLUE_KNOB, &blue_debounce);
+    if (clicked_blue == 1) {
+      bird_obj2->acceleration_x += 30;
+    }  
 
+    if (health > 0) {
+      physics(bird_obj, delta_time_ns);
+    }
     if (health2 > 0) {
-      physics(bird_obj2);
-      clicked = get_knob_click(BLUE_KNOB);
-      if (clicked == 1) {
-        bird_obj2->acceleration_x += 30;
-      }  
+      physics(bird_obj2, delta_time_ns);
     } 
     
+    clock_gettime(CLOCK_MONOTONIC, &old);;
     update_pipes();
     int check = check_player_lost(bird_obj);
     if (check == -1 && health > 0) {
@@ -434,7 +456,7 @@ int play_multiplayer() {
       player1_score++;
     }
     check = check_player_lost(bird_obj2);
-    if (check == -1 && health2 > 0) {
+    if (check == -1 && health2 > 0) { 
       health2--;
     } 
     else if(check == 1 && health2 > 0) {
@@ -442,12 +464,14 @@ int play_multiplayer() {
     }
     if (health + health2 <= 0) break;
     redraw_game_multiplayer(player1_score, player2_score);
+    
   }
   return (player1_score > player2_score ? player1_score : player2_score);
 }
 
 
 int play_singleplayer() {
+  int debounce = 1;
   unsigned int player1_score = 0;
   int health = 1;
   restart_game_objects();
@@ -455,15 +479,20 @@ int play_singleplayer() {
   int clicked = 0;
   sleep(1);
   while (clicked == 0) {
-    clicked = get_knob_click(RED_KNOB);
+    clicked = get_knob_click(RED_KNOB, &debounce);
   }
-
+  struct timespec old, new; 
   while (1) {
-    physics(bird_obj); // TODO: think about values 
-    clicked = get_knob_click(RED_KNOB);
+    clock_gettime(CLOCK_MONOTONIC, &new);
+    long long start_ns = old.tv_sec * 1e9 + old.tv_nsec;
+    long long end_ns = new.tv_sec * 1e9 + new.tv_nsec;
+    long long delta_time_ns = end_ns - start_ns;
+    physics(bird_obj, delta_time_ns); // TODO: think about values 
+    clicked = get_knob_click(RED_KNOB, &debounce);
     if (clicked == 1) {
       bird_obj->acceleration_x += 30;
     }
+    clock_gettime(CLOCK_MONOTONIC, &old);;
     update_pipes();
     if (check_player_lost(bird_obj) == -1) health--; // Maybe ?
     else if(check_player_lost(bird_obj) == 1 && health > 0) player1_score++;
@@ -583,15 +612,20 @@ void add_text_to_buffer(char *pattern, ...) {
     draw_font(0, 0, 1, str, 0);
 }
 
-int get_knob_click(int knob_num) {
+int get_knob_click(int knob_num, int *debounce) {
   if (knob_num != 0 && knob_num != 2) return 0;
-  static int debounce = 0;
-  uint8_t current_value = (*(volatile uint32_t*)(membase + SPILED_REG_KNOBS_8BIT_o) >> (24 + knob_num)) & 0xff;
-  if(current_value == 1 && debounce == 1) {
-    debounce = 0;
+  uint8_t current_value;
+  if(knob_num == RED_KNOB) {
+    current_value = (*(volatile uint32_t*)(membase + SPILED_REG_KNOBS_8BIT_o) >> (24 + RED_KNOB)) & 0xff;
+  } else if(knob_num == BLUE_KNOB) {
+    current_value = (*(volatile uint32_t*)(membase + SPILED_REG_KNOBS_8BIT_o) >> (24 + BLUE_KNOB)) & 0x01;
+
+  }
+  if(current_value == 1 && *debounce == 1) {
+    *debounce = 0;
     return 1;
   } else if (current_value == 0) {
-    debounce = 1;
+    *debounce = 1;
     return 0;
   } else {
     return 0;
@@ -599,6 +633,48 @@ int get_knob_click(int knob_num) {
   
   return 0;
 }
+
+int get_knob_multi_click(int knob_num, int *red_debounce, int *blue_debounce) {
+  if (knob_num != 0 && knob_num != 2) return 0;
+  uint8_t current_value_blue = (*(volatile uint32_t*)(membase + SPILED_REG_KNOBS_8BIT_o) >> (24 + RED_KNOB)) & 0xff;
+  uint8_t current_value_red = (*(volatile uint32_t*)(membase + SPILED_REG_KNOBS_8BIT_o) >> (24 + BLUE_KNOB)) & 0x01;
+  debug_print("%d %d debounce %d %d", current_value_red, current_value_blue, *red_debounce, *blue_debounce);
+  if(current_value_red == 1 && *red_debounce == 1 && current_value_blue && *blue_debounce == 1) {
+    *red_debounce = 0;
+    *blue_debounce = 0;
+    return 3;
+  }
+  if(current_value_blue == 1 && *blue_debounce == 1) {
+    *blue_debounce = 0;
+    *red_debounce = 1;
+    return 2;
+  }
+  if(current_value_red == 1 && *red_debounce == 1) {
+    *blue_debounce = 1;
+    *red_debounce = 0;
+    return 1;
+  } 
+  if (current_value_red == 0 && current_value_blue == 0) {
+    *red_debounce = 1;
+    *blue_debounce = 1;
+    return 0;
+  }
+  if(current_value_red == 0) {
+    *red_debounce = 1;
+    return 0;
+  } 
+  if(current_value_blue == 0) {
+    *blue_debounce = 1;
+    return ;
+  }  
+  else {
+    return 0;
+  }
+  
+  return 0;
+}
+
+// 
 
 int get_knob_rotation() {
     static int old_value = -1;
@@ -646,6 +722,15 @@ Img* ppm_load_image(char *path) {
         fprintf(stderr, "Malloc fail\n");
         return 1;
     }
+
+  char c;
+  
+  if (fscanf(fp, "%c", &c) == 1 && c == '#') {
+    while(fscanf(fp, "%c", &c) == 1 && c != '\n') {
+    }
+  }
+  fseek(fp, -1, SEEK_CUR);
+
 
     if (fscanf(fp, "%d %d", &img->w, &img->h) != 2) {
         fprintf(stderr, "Invalid image size\n");

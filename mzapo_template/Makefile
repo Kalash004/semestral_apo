@@ -12,7 +12,7 @@ LDLIBS += -lrt -lpthread
 SOURCES = bird.c mzapo_phys.c mzapo_parlcd.c serialize_lock.c 
 SOURCES += font_prop14x16.c font_rom8x16.c
 TARGET_EXE = bird
-TARGET_IP ?= 192.168.223.205
+TARGET_IP ?= 192.168.223.215
 ifeq ($(TARGET_IP),)
 ifneq ($(filter debug run,$(MAKECMDGOALS)),)
 $(warning The target IP address is not set)
@@ -86,6 +86,8 @@ init: $(TARGET_EXE)
 	scp top.ppm root@$(TARGET_IP):$(TARGET_DIR)/top.ppm
 	scp bottom.ppm root@$(TARGET_IP):$(TARGET_DIR)/bottom.ppm
 	scp background.ppm root@$(TARGET_IP):$(TARGET_DIR)/background.ppm
+	scp bird_blue.ppm root@$(TARGET_IP):$(TARGET_DIR)/bird_blue.ppm
+	scp bird_red.ppm root@$(TARGET_IP):$(TARGET_DIR)/bird_red.ppm
 
 
 ifneq ($(filter -o ProxyJump=,$(SSH_OPTIONS))$(SSH_GDB_TUNNEL_REQUIRED),)
