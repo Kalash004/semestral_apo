@@ -18,7 +18,7 @@
 #include "game.h"
 #include "graphics.h"
 #include "utils.h"
-#include "knobs.h"
+#include "peripherals.h"
 
 #define _POSIX_C_SOURCE 200112L
 #define RED_KNOB 2
@@ -46,6 +46,10 @@ Img *top_pipe;
 Img *btm_pipe;
 GameObject_t *pipe_pool;
 unsigned int highest_player_score;
+unsigned int last_single_score;
+unsigned int last_multi_score1;
+unsigned int last_multi_score2;
+unsigned int all_pipes_passed;
 
 void main_menu(options_t *opts, void *lcd);
 void serialize();

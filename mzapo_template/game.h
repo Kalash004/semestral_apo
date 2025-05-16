@@ -55,6 +55,11 @@ extern GameObject_t *pipe_pool;
 extern GameObject_t *bird_obj;
 extern GameObject_t *bird_obj2;
 extern unsigned int highest_player_score;
+unsigned int highest_player_score;
+unsigned int last_single_score;
+unsigned int last_multi_score1;
+unsigned int last_multi_score2;
+unsigned int all_pipes_passed;
 
 int check_player_lost(GameObject_t player_obj);
 int play_singleplayer();
