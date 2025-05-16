@@ -149,9 +149,10 @@ void draw_stats() {
     int debounce = 1;
     write_img_to_buffer(background, 0, 0);
     int click_value = get_knob_click(RED_KNOB, &debounce);
-    add_text_to_buffer("Highest score is: %u", highest_player_score);
-    //add_text_to_buffer("Last singleplayer score: %u", player1_score);
-    //add_text_to_buffer("Last multiplayer score: Red %u | Blue %u", player1_score, player2_score);
+    add_text_to_buffer("Highest score: %u", highest_player_score);
+    add_text_to_buffer("Last singleplayer score: %u", last_single_score);
+    add_text_to_buffer("Last multiplayer score: Red %u | Blue %u", last_multi_score1, last_multi_score2);
+    add_text_to_buffer("Number of pipes passed in all games: %u", all_pipes_passed);
     draw_buffer();
     sleep(1);
     while(1) {

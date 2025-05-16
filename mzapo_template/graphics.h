@@ -54,7 +54,12 @@ extern Img *btm_pipe;
 extern GameObject_t *pipe_pool;
 extern GameObject_t *bird_obj;
 extern GameObject_t *bird_obj2;
-extern unsigned int highest_player_score;
+unsigned int highest_player_score;
+unsigned int last_single_score;
+unsigned int last_multi_score1;
+unsigned int last_multi_score2;
+unsigned int all_pipes_passed;
+
 
 void draw_menu_bars(int highlighted, int x, int y, int padding);
 void draw_buffer();

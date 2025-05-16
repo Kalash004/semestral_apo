@@ -20,6 +20,7 @@ void serialize() {
 }
 
 void program() {
+    get_stats_from_file(&highest_player_score, &all_pipes_passed);
     origin_lcd = map_phys_address(PARLCD_REG_BASE_PHYS, PARLCD_REG_SIZE, 0);
     membase = map_phys_address(SPILED_REG_BASE_PHYS, SPILED_REG_SIZE, 0);
 
@@ -123,6 +124,7 @@ void main_menu(options_t *opts, void *lcd) {
 }
 
 void exit_game() {
+  save_stats_to_file(highest_player_score, all_pipes_passed);
   memset(origin_fb, 0x0, sizeof(origin_fb));
   draw_buffer();
   exit(0);

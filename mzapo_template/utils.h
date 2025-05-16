@@ -21,7 +21,12 @@
 extern unsigned char *membase;
 extern uint16_t origin_fb[480][320];
 extern void *origin_lcd;
+extern unsigned int highest_players_score;
+extern unsigned int all_pipes_passed;
 
 void debug_print(char *pattern, ...);
 int char_width(int ch, font_descriptor_t *font);
+
+void get_stats_from_file(unsigned int *highest_players_score, unsigned int *all_pipes_passed);
+void get_stats_from_file(unsigned int *highest_players_score, unsigned int *all_pipes_passed);
 #endif
