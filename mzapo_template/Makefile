@@ -9,7 +9,7 @@ LDFLAGS += -static
 LDLIBS += -lrt -lpthread
 #LDLIBS += -lm
 
-SOURCES = img.c game.c utils.c knobs.c graphics.c main.c mzapo_phys.c mzapo_parlcd.c serialize_lock.c 
+SOURCES = img.c game.c utils.c peripherals.c graphics.c main.c mzapo_phys.c mzapo_parlcd.c serialize_lock.c 
 SOURCES += font_prop14x16.c font_rom8x16.c
 TARGET_EXE = bird
 TARGET_IP ?= 192.168.223.215

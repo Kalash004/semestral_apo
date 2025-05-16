@@ -1,6 +1,6 @@
 #pragma once
-#ifndef KNOBS_H
-#define KNOBS_H
+#ifndef PERIPHERALS_H
+#define PERIPHERALS_H
 
 #include <stdarg.h> 
 #include "mzapo_regs.h"

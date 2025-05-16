@@ -11,3 +11,13 @@ void debug_print(char *pattern, ...) {
     draw_font(0, 0, 1, str, 0);
     draw_buffer();
 }
+
+int char_width(int ch, font_descriptor_t *font) {
+  int width;
+  if (!font->width) {
+    width = font->maxwidth;
+  } else {
+    width = font->width[ch-font->firstchar];
+  }
+  return width;
+}

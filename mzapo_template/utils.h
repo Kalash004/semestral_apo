@@ -23,5 +23,5 @@ extern uint16_t origin_fb[480][320];
 extern void *origin_lcd;
 
 void debug_print(char *pattern, ...);
-
+int char_width(int ch, font_descriptor_t *font);
 #endif

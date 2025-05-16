@@ -18,7 +18,7 @@
 #include "game.h"
 #include "graphics.h"
 #include "utils.h"
-#include "knobs.h"
+#include "peripherals.h"
 
 
 

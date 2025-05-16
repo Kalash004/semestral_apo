@@ -73,7 +73,7 @@ void main_menu(options_t *opts, void *lcd) {
 
  // Big fonts
   int highlited_index = -1;
-  draw_font(100, 10, 3, "FLAPPY BIRD",1);
+  draw_font(100, 10, 3, "FLAPPY BIRD", 2, CHANGING_WIDTH_FONT);
   draw_menu_bars(highlited_index, 100, 100, 40);
   draw_buffer();
   // struct timespec loop_delay = {.tv_sec = 0, .tv_nsec = 200 * 1000 * 1000};
