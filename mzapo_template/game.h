@@ -15,7 +15,16 @@
 #include <unistd.h>
 #include <string.h>
 
+#include "stats.h"
+#include "graphics.h"
 #include "img.h"
+#include "header.h"
+#include "peripherals.h"
+
+#define max(a,b) \
+   ({ __typeof__ (a) _a = (a); \
+       __typeof__ (b) _b = (b); \
+     _a > _b ? _a : _b; })
 // Gap between pipes
 #define GAP 450
 #define RED_KNOB 2
@@ -28,19 +37,6 @@
 #define GRAVITY_FORCE 4
 #define JUMP_PER_FRAME 5
 #define JUMP_FORCE 30
-typedef struct Pixel;
-typedef struct Img;
-
-typedef struct {
-  int x;
-  int y;
-  int acceleration_x;
-  Img *img;
-  int debounce;
-  unsigned int score;
-  int health;
-  int knob_id;
-} GameObject_t;
 
 extern unsigned char *membase;
 extern uint16_t origin_fb[480][320];
@@ -66,5 +62,6 @@ void update_pipes();
 void add_multiplayer_score(GameObject_t **player_object_arr, int player_count);
 void play(int player_count, GameObject_t **player_object_arr);
 int check_hitbox_hit(GameObject_t player);
-
+void process_stats(GameObject_t **player_object_arr, int player_count);
+void get_start_click();
 #endif

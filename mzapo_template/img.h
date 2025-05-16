@@ -14,16 +14,7 @@
 #include <unistd.h>
 #include <string.h>
 
-typedef struct {
-    unsigned char red;
-    unsigned char green;
-    unsigned char blue;
-} Pixel;
-
-typedef struct {
-    int w, h;
-    Pixel *data;
-} Img;
+#include "header.h"
 
 extern unsigned char *membase;
 extern uint16_t origin_fb[480][320];
