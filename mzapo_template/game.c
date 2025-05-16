@@ -94,7 +94,10 @@ int play_multiplayer() {
     clicked = get_knob_click(RED_KNOB, &red_debounce);
   }
   struct timespec old, new; 
+  led_draw(0, 0x00FF00);
+  led_draw(1, 0x00FF00);
   while (1) {
+    
     clock_gettime(CLOCK_MONOTONIC, &new);
     long long start_ns = old.tv_sec * 1e9 + old.tv_nsec;
     long long end_ns = new.tv_sec * 1e9 + new.tv_nsec;
@@ -138,6 +141,8 @@ int play_multiplayer() {
     redraw_game_multiplayer(player1_score, player2_score);
     
   }
+  led_draw(0, 0x000000);
+  led_draw(1, 0x000000);
   return (player1_score > player2_score ? player1_score : player2_score);
 }
 
@@ -153,6 +158,8 @@ int play_singleplayer() {
   while (clicked == 0) {
     clicked = get_knob_click(RED_KNOB, &debounce);
   }
+  
+  led_draw(0, 0x00FF00);
   struct timespec old, new; 
   while (1) {
     clock_gettime(CLOCK_MONOTONIC, &new);
@@ -171,6 +178,7 @@ int play_singleplayer() {
     if (health < 0) break;
     redraw_game_singleplayer(player1_score);
   }
+  led_draw(0, 0x000000);
   return player1_score;
 }
 
