@@ -20,10 +20,10 @@
 #include "utils.h"
 #include "peripherals.h"
 
-
-
 #define _POSIX_C_SOURCE 200112L
-
+#define RED_KNOB 2
+#define BLUE_KNOB 0
+#define GREEN_KNOB 1
 
 typedef struct {
   int game_mode;
@@ -45,8 +45,6 @@ Img *bird_blue;
 Img *top_pipe;
 Img *btm_pipe;
 GameObject_t *pipe_pool;
-GameObject_t *bird_obj;
-GameObject_t *bird_obj2;
 unsigned int highest_player_score;
 unsigned int last_single_score;
 unsigned int last_multi_score1;
@@ -57,7 +55,8 @@ void main_menu(options_t *opts, void *lcd);
 void serialize();
 void program();
 void exit_game();
-
-
+void add_to_player_arr(GameObject_t **player_arr, Img *bird_img, int knob_id, int x, int y, int player_count);
+int choose_player_knobs(GameObject_t **player_arr);
+void choose_singleplayer_knob(GameObject_t **player_arr);
 
 #endif

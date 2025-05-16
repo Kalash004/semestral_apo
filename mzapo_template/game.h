@@ -19,6 +19,7 @@
 // Gap between pipes
 #define GAP 450
 #define RED_KNOB 2
+#define GREEN_KNOB 1
 #define BLUE_KNOB 0
 #define SCREEN_WIDTH 480
 #define SCREEN_HEIGHT 320
@@ -26,6 +27,7 @@
 // Bird jump/gravity settings
 #define GRAVITY_FORCE 4
 #define JUMP_PER_FRAME 5
+#define JUMP_FORCE 30
 typedef struct Pixel;
 typedef struct Img;
 
@@ -34,6 +36,10 @@ typedef struct {
   int y;
   int acceleration_x;
   Img *img;
+  int debounce;
+  int score;
+  int health;
+  int knob_id;
 } GameObject_t;
 
 extern unsigned char *membase;
@@ -55,15 +61,14 @@ unsigned int last_multi_score1;
 unsigned int last_multi_score2;
 unsigned int all_pipes_passed;
 
-int check_player_lost(GameObject_t *player_obj);
+int check_player_lost(GameObject_t player_obj);
 int play_singleplayer();
 void restart_game_objects();
-void restart_game_objects_multi();
+void restart_game_objects_multi(int player_id, GameObject_t **player_object_arr);
 void restart_pipes();
-void physics(GameObject_t *player_obj, long long delta_time);
+void physics(GameObject_t *player_obj);
 void update_pipes();
-int play_multiplayer();
-int check_multiplayer_lost();
-int check_hitbox_hit(GameObject_t *player);
+void play(int player_count, GameObject_t **player_object_arr);
+int check_hitbox_hit(GameObject_t player);
 
 #endif

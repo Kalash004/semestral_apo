@@ -25,36 +25,61 @@ void program() {
     membase = map_phys_address(SPILED_REG_BASE_PHYS, SPILED_REG_SIZE, 0);
 
     background = ppm_load_image("/tmp/kolomcon/background.ppm");
-    bird1 = ppm_load_image("/tmp/kolomcon/bird1.ppm");
     top_pipe = ppm_load_image("/tmp/kolomcon/top.ppm");
     btm_pipe = ppm_load_image("/tmp/kolomcon/bottom.ppm");
+    bird1 = ppm_load_image("/tmp/kolomcon/bird1.ppm");
     bird_blue = ppm_load_image("/tmp/kolomcon/bird_blue.ppm");
     bird_red = ppm_load_image("/tmp/kolomcon/bird_red.ppm");
 
     pipe_pool = calloc(sizeof(GameObject_t), 6);
     for (int i = 0; i < 3; ++i) {
-        GameObject_t top = { .x = i * (80 + 160), .y = -200, .img = top_pipe };
-        GameObject_t btm = { .x = i * (80 + 160), .y = -200 + GAP, .img = btm_pipe };
+        GameObject_t top = { .x = i * (80 + 160), .y = -200, .img = top_pipe, .debounce = 0, .score = 0, .health = 1, .knob_id = 0};
+        GameObject_t btm = { .x = i * (80 + 160), .y = -200 + GAP, .img = btm_pipe, .debounce = 0, .score = 0, .health = 1, .knob_id = 0 };
         pipe_pool[i] = top;
         pipe_pool[i + 3] = btm;
     }
 
-    bird_obj = calloc(sizeof(GameObject_t), 1);
-    bird_obj->img = bird1;
+    GameObject_t bird_obj1;
+    bird_obj1.img = bird_red;
+    bird_obj1.debounce = 1;
+    bird_obj1.score = 0;
+    bird_obj1.health = 1;
+    bird_obj1.knob_id = RED_KNOB;
+    
 
-    bird_obj2 = calloc(sizeof(GameObject_t), 1);
-    bird_obj2->img = bird1;
+    GameObject_t bird_obj2;
+    bird_obj2.img = bird_blue;
+    bird_obj2.debounce = 1;
+    bird_obj2.score = 0;
+    bird_obj2.health = 1;
+    bird_obj2.knob_id = BLUE_KNOB;
+
+    GameObject_t bird_obj3;
+    bird_obj3.img = bird1;
+    bird_obj3.debounce = 1;
+    bird_obj3.score = 0;
+    bird_obj3.health = 1;
+    bird_obj3.knob_id = GREEN_KNOB;
+
+
+    GameObject_t **player_arr = calloc(sizeof(GameObject_t *), 3);
+    player_arr[0] = &bird_obj1;
+    player_arr[1] = &bird_obj2;
+    player_arr[2] = &bird_obj3;
+
+
 
     while (1) {
         options_t options;
         main_menu(&options, origin_lcd);
-
         switch (options.game_mode) {
             case 1:
-                highest_player_score = max(highest_player_score, play_singleplayer());
+                choose_singleplayer_knob(player_arr);
+                play(1, player_arr);
                 break;
             case 2:
-                highest_player_score = max(highest_player_score, play_multiplayer());
+                int player_count = choose_player_knobs(player_arr);
+                play(player_count, player_arr);
                 break;
             case 3:
                 printf("Game mode %d\n", options.game_mode);
@@ -62,6 +87,78 @@ void program() {
                 break;
         }
     }
+}
+
+
+void add_to_player_arr(GameObject_t **player_arr, Img *bird_img, int knob_id, int x, int y, int player_count) {
+  player_arr[player_count-1]->img = bird_img;
+  player_arr[player_count-1]->knob_id = knob_id;
+  player_arr[player_count-1]->y = y;
+  player_arr[player_count-1]->x = x;
+}
+
+void choose_singleplayer_knob(GameObject_t **player_arr) {
+  write_img_to_buffer(background, 0, 0);
+  draw_buffer();
+  int debounce = 0;
+  sleep(1);
+  while (1) {
+    if (get_knob_click(RED_KNOB, &debounce) == 1) {
+      add_to_player_arr(player_arr, bird_red, RED_KNOB, 90, 145, 1);
+      break;
+    }
+
+    if (get_knob_click(GREEN_KNOB, &debounce) == 1) {
+      add_to_player_arr(player_arr, bird1, GREEN_KNOB, 230, 145, 1);
+      break;
+    }
+
+    if (get_knob_click(BLUE_KNOB, &debounce) == 1) {
+      add_to_player_arr(player_arr, bird_blue, BLUE_KNOB, 370, 145, 1);
+      break;
+    }
+  }
+}
+int choose_player_knobs(GameObject_t **player_arr) {
+  write_img_to_buffer(background, 0, 0);
+  draw_buffer();
+  restart_pipes();
+  int player_count = 0;
+  int red_clicked = 0;
+  int green_clicked = 0;
+  int blue_clicked = 0;
+  int red_debounce = 1;
+  int green_debounce = 1;
+  int blue_debounce = 1;
+  sleep(1);
+  while (1) {
+    if ((red_clicked > 1 || blue_clicked > 1 || green_clicked > 1) && player_count >= 2) break;
+    if (get_knob_click(RED_KNOB, &red_debounce) == 1) {
+      red_clicked++;
+      if (red_clicked == 1){
+        ++player_count;
+        add_to_player_arr(player_arr, bird_red, RED_KNOB, 90, 145, player_count);
+      }
+    }
+
+    if (get_knob_click(GREEN_KNOB, &green_debounce) == 1) {
+      green_clicked++;
+      if (green_clicked == 1) {
+        player_count++;
+        add_to_player_arr(player_arr, bird1, GREEN_KNOB, 230, 145, player_count);
+      }
+    }
+
+    if (get_knob_click(BLUE_KNOB, &blue_debounce) == 1) {
+      blue_clicked++;
+      if (blue_clicked == 1) {
+        player_count++;
+        add_to_player_arr(player_arr, bird_blue, BLUE_KNOB, 370, 145, player_count);
+      }
+    }
+    redraw_game_multiplayer(player_count, player_arr);
+  }
+  return player_count;
 }
 
 void main_menu(options_t *opts, void *lcd) {
@@ -77,7 +174,6 @@ void main_menu(options_t *opts, void *lcd) {
   draw_font(100, 10, 3, "FLAPPY BIRD", 2, CHANGING_WIDTH_FONT);
   draw_menu_bars(highlited_index, 100, 100, 40);
   draw_buffer();
-  // struct timespec loop_delay = {.tv_sec = 0, .tv_nsec = 200 * 1000 * 1000};
   int click_value = 0;
   while (1) {
     int debounce = 1;
