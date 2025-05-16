@@ -44,7 +44,7 @@ int get_knob_click(int knob_num, int *debounce) {
   return 0;
 }
 
-void led_draw(int led_num, int color) {
+void led_draw(int led_num, uint32_t color) {
   if(led_num == 0) {
       *(volatile uint32_t*)(membase + SPILED_REG_LED_RGB1_o) = color;
   } else {

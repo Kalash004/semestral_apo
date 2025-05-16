@@ -23,23 +23,15 @@ int get_knob_rotation() {
 }
 
 int get_knob_click(int knob_num, int *debounce) {
-  if (knob_num != 0 && knob_num != 2) return 0;
+  if (knob_num < 0 && knob_num > 2) return 0;
   uint8_t current_value;
-  if(knob_num == RED_KNOB) {
-    current_value = (*(volatile uint32_t*)(membase + SPILED_REG_KNOBS_8BIT_o) >> (24 + RED_KNOB)) & 0xff;
-  } else if(knob_num == BLUE_KNOB) {
-    current_value = (*(volatile uint32_t*)(membase + SPILED_REG_KNOBS_8BIT_o) >> (24 + BLUE_KNOB)) & 0x01;
-  
-  }
+  current_value = (*(volatile uint32_t*)(membase + SPILED_REG_KNOBS_8BIT_o) >> (24 + knob_num)) & 0x01;
   if(current_value == 1 && *debounce == 1) {
     *debounce = 0;
     return 1;
   } else if (current_value == 0) {
     *debounce = 1;
     return 0;
-  } else {
-    return 0;
   }
-  
   return 0;
 }

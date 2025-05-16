@@ -3,15 +3,10 @@
 void restart_game_objects_multi(int player_count, GameObject_t **player_object_arr) {
   restart_pipes();
   for (int i = 0; i < player_count; ++i) {
+    player_object_arr[i]->health = 1;
+    player_object_arr[i]->x = 75;
+    player_object_arr[i]->y = 80 + ((i+1) * 20) + (30 / player_count);  
   }
-  player_object_arr[0]->x = 75;
-  player_object_arr[0]->y = 100;
-  player_object_arr[1]->x = 75;
-  player_object_arr[1]->y = 120;
-  player_object_arr[2]->x = 75;
-  player_object_arr[2]->y = 120;
-
-
 }
 
 void restart_pipes() {
@@ -58,22 +53,14 @@ void update_pipes() {
   }
 }
 
-void play(int player_count, int start_id, GameObject_t **player_object_arr) {
-  
-
-  printf("Playing\n");
+void play(int player_count, GameObject_t **player_object_arr) {
   restart_game_objects_multi(player_count, player_object_arr);
-  printf("Restart gameobj \n");
   redraw_game_multiplayer(player_count, player_object_arr);
-  printf("Redraw\n");
-  int clicked = 0;
-  // get_start_click(&clicked);
+  get_start_click();
   while (1) {
-    for (int i = start_id; i < player_count; ++i) {
+    for (int i = 0; i < player_count; ++i) {
       if (player_object_arr[i]->health <= 0) continue;
-          printf("Health check\n");
-      int clicked = get_knob_click(&(player_object_arr[i]->knob_id), &(player_object_arr[i]->debounce));
-      printf("click\n");
+      int clicked = get_knob_click(player_object_arr[i]->knob_id, &(player_object_arr[i]->debounce));
       if (clicked == 1) {
         player_object_arr[i]->acceleration_x += JUMP_FORCE;
       }
@@ -84,17 +71,24 @@ void play(int player_count, int start_id, GameObject_t **player_object_arr) {
       if (check == -1 && player_object_arr[i]->health > 0) player_object_arr[i]->health--;
       if (check == 1 && player_object_arr[i]->health > 0) player_object_arr[i]->score++;
     }
+    int health_sum = 0;
+    for (int i = 0; i < player_count; ++i) {
+      health_sum += player_object_arr[i]->health;
+    }
+    if (health_sum <= 0) break;
     update_pipes();
     redraw_game_multiplayer(player_count, player_object_arr);
   }
 }
 
-void get_start_click(int *clicked) {
-  int *rebounce;
-  *clicked = 0;
+void get_start_click() {
+  int rebounce = 1;
+  int clicked = 0;
   sleep(1);
-  while (*clicked == 0) {
-    *clicked = get_knob_click(RED_KNOB, rebounce);
+  while (clicked == 0) {
+    clicked += get_knob_click(RED_KNOB, &rebounce);
+    clicked += get_knob_click(GREEN_KNOB, &rebounce);
+    clicked += get_knob_click(BLUE_KNOB, &rebounce);
   }
 }
 
@@ -103,7 +97,6 @@ int check_player_lost(GameObject_t player_obj) {
 }
 
 int check_hitbox_hit(GameObject_t player) {
-printf("Player %d x: %d y: %d\n",player.knob_id, player.x, player.y);
 if (player.y > SCREEN_HEIGHT || player.y < 0) return -1;
   for(int i = 0; i < 3; ++i) {
     GameObject_t *pipe_top = &pipe_pool[i];

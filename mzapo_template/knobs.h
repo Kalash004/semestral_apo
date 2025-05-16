@@ -14,6 +14,7 @@
 #include <unistd.h>
 #include <string.h>
 #define RED_KNOB 2
+#define GREEN_KNOB 1
 #define BLUE_KNOB 0
 
 #define SPILED_REG_BASE_PHYS  0x43c40000

@@ -19,6 +19,7 @@
 // Gap between pipes
 #define GAP 450
 #define RED_KNOB 2
+#define GREEN_KNOB 1
 #define BLUE_KNOB 0
 #define SCREEN_WIDTH 480
 #define SCREEN_HEIGHT 320
@@ -62,7 +63,7 @@ void restart_game_objects_multi(int player_id, GameObject_t **player_object_arr)
 void restart_pipes();
 void physics(GameObject_t *player_obj);
 void update_pipes();
-void play(int player_count, int start_id, GameObject_t **player_object_arr);
+void play(int player_count, GameObject_t **player_object_arr);
 int check_hitbox_hit(GameObject_t player);
 
 #endif

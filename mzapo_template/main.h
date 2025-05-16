@@ -51,7 +51,8 @@ void main_menu(options_t *opts, void *lcd);
 void serialize();
 void program();
 void exit_game();
-
-
+void add_to_player_arr(GameObject_t **player_arr, Img *bird_img, int knob_id, int x, int y, int player_count);
+int choose_player_knobs(GameObject_t **player_arr);
+void choose_singleplayer_knob(GameObject_t **player_arr);
 
 #endif
