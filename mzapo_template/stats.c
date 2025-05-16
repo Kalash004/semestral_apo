@@ -1,11 +1,13 @@
 #include "stats.h"
 
 void get_stats_from_file() {
-  FILE *file = fopen("/tmp/kolomcon/stats.txt", "r");
-   if (file == NULL) {
+    char path[100];
+    strcpy(path, PATH);
+    FILE *file = fopen(strcat(path,"stats.txt"), "r");
+    if (file == NULL) {
        perror("Error opening file");
        return;
-   }
+    }
 
    unsigned int players_score;
    if (fscanf(file, "%u\n", &players_score) == 1) {
@@ -31,7 +33,9 @@ void get_stats_from_file() {
 }
 
 int get_highest_score() {
-  FILE *file = fopen("/tmp/kolomcon/stats.txt", "r");
+    char path[100];
+    strcpy(path, PATH);
+  FILE *file = fopen(strcat(path,"stats.txt"), "r");
   int players_score;
   if (fscanf(file, "%u", &players_score) == 1) {
     add_text_to_buffer("Highest player score: %u", 0, 0, players_score);
@@ -43,7 +47,9 @@ int get_highest_score() {
 }
 
 void save_stats_to_file(unsigned int highest_players_score, int flag, unsigned int last_game_score[3], unsigned int last_single_game_score) {
-  FILE *file = fopen("/tmp/kolomcon/stats.txt", "r+");
+  char path[100];
+  strcpy(path, PATH);
+  FILE *file = fopen(strcat(path,"stats.txt"), "r+");
    if (file == NULL) {
        perror("Error opening file");
        return;
