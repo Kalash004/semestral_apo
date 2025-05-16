@@ -35,6 +35,10 @@ typedef struct {
   int y;
   int acceleration_x;
   Img *img;
+  int debounce;
+  int score;
+  int health;
+  int knob_id;
 } GameObject_t;
 
 extern unsigned char *membase;
@@ -51,15 +55,14 @@ extern GameObject_t *bird_obj;
 extern GameObject_t *bird_obj2;
 extern unsigned int highest_player_score;
 
-int check_player_lost(GameObject_t *player_obj);
+int check_player_lost(GameObject_t player_obj);
 int play_singleplayer();
 void restart_game_objects();
-void restart_game_objects_multi();
+void restart_game_objects_multi(int player_id, GameObject_t **player_object_arr);
 void restart_pipes();
-void physics(GameObject_t *player_obj, long long delta_time);
+void physics(GameObject_t *player_obj);
 void update_pipes();
-void play(int player_count, unsigned int *scores_arr, int *health_arr, int *debounce_holder_arr, GameObject_t **player_object_arr, int *knobs_identif_arr) {
-int check_multiplayer_lost();
-int check_hitbox_hit(GameObject_t *player);
+void play(int player_count, int start_id, GameObject_t **player_object_arr);
+int check_hitbox_hit(GameObject_t player);
 
 #endif

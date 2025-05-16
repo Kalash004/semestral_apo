@@ -32,34 +32,40 @@ void program() {
 
     pipe_pool = calloc(sizeof(GameObject_t), 6);
     for (int i = 0; i < 3; ++i) {
-        GameObject_t top = { .x = i * (80 + 160), .y = -200, .img = top_pipe };
-        GameObject_t btm = { .x = i * (80 + 160), .y = -200 + GAP, .img = btm_pipe };
+        GameObject_t top = { .x = i * (80 + 160), .y = -200, .img = top_pipe, .debounce = 0, .score = 0, .health = 1, .knob_id = 0};
+        GameObject_t btm = { .x = i * (80 + 160), .y = -200 + GAP, .img = btm_pipe, .debounce = 0, .score = 0, .health = 1, .knob_id = 0 };
         pipe_pool[i] = top;
         pipe_pool[i + 3] = btm;
     }
 
-    bird_obj1 = calloc(sizeof(GameObject_t), 1);
-    bird_obj1->img = bird_red;
+    GameObject_t bird_obj1;
+    bird_obj1.img = bird_red;
+    bird_obj1.debounce = 1;
+    bird_obj1.score = 0;
+    bird_obj1.health = 1;
+    bird_obj1.knob_id = RED_KNOB;
+    
 
-    bird_obj2 = calloc(sizeof(GameObject_t), 1);
-    bird_obj2->img = bird_blue;
+    GameObject_t bird_obj2;
+    bird_obj2.img = bird_blue;
+    bird_obj2.debounce = 1;
+    bird_obj2.score = 0;
+    bird_obj2.health = 1;
+    bird_obj2.knob_id = BLUE_KNOB;
 
-    bird_obj3 = calloc(sizeof(GameObject_t), 1);
-    bird_obj3->img = bird1;
+    GameObject_t bird_obj3;
+    bird_obj3.img = bird1;
+    bird_obj3.debounce = 1;
+    bird_obj3.score = 0;
+    bird_obj3.health = 1;
+    bird_obj3.knob_id = GREEN_KNOB;
+
 
     GameObject_t **player_arr = calloc(sizeof(GameObject_t *), 3);
-    player_arr[0] = bird_obj1;
-    player_arr[1] = bird_obj2;
-    player_arr[2] = bird_obj3;
+    player_arr[0] = &bird_obj1;
+    player_arr[1] = &bird_obj2;
+    player_arr[2] = &bird_obj3;
 
-    unsigned int score_arr[3] = {0};
-    int health_arr[3] = {0};
-    int debounce_holder_arr[3] = {1};
-    
-    int knobs_id_arr[3];
-    knobs_id_arr[0] = RED_KNOB;
-    knobs_id_arr[1] = BLUE_KNOB;
-    knobs_id_arr[2] = GREEN_KNOB;
 
 
     while (1) {
@@ -67,10 +73,10 @@ void program() {
         main_menu(&options, origin_lcd);
         switch (options.game_mode) {
             case 1:
-                play(3, 2, score_arr, health_arr, debounce_holder_arr, player_arr, knobs_id_arr)
+                play(3, 2, player_arr);
                 break;
             case 2:
-                play(2, 0, score_arr, health_arr, debounce_holder_arr, player_arr, knobs_id_arr)
+                play(2, 0, player_arr);
                 break;
             case 3:
                 printf("Game mode %d\n", options.game_mode);

@@ -45,8 +45,6 @@ Img *bird_blue;
 Img *top_pipe;
 Img *btm_pipe;
 GameObject_t *pipe_pool;
-GameObject_t *bird_obj;
-GameObject_t *bird_obj2;
 unsigned int highest_player_score;
 
 void main_menu(options_t *opts, void *lcd);

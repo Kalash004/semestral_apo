@@ -47,9 +47,6 @@ extern Img *bird_red;
 extern Img *bird_blue;
 extern Img *top_pipe;
 extern Img *btm_pipe;
-extern GameObject_t *pipe_pool;
-extern GameObject_t *bird_obj;
-extern GameObject_t *bird_obj2;
 extern unsigned int highest_player_score;
 
 void draw_menu_bars(int highlighted, int x, int y, int padding);
@@ -58,8 +55,7 @@ void write_img_to_buffer(Img* img, int x_pos, int y_pos);
 void draw_font(unsigned int x_pos,unsigned int y_pos, int size, char *str, int highlighted);
 int draw_game(uint16_t origin_fb[480][320], void *lcd, int highlighted, int x, int y, int padding); //test method
 void draw_stats();
-void redraw_game_singleplayer(unsigned int player1_score);
-void redraw_game_multiplayer(int player_count, unsigned int *score_arrs, GameObject_t **player_arr);
 void add_text_to_buffer(char *pattern, ...);
+void redraw_game_multiplayer(int player_count, GameObject_t **player_arr);
 
 #endif
