@@ -149,10 +149,7 @@ void draw_stats() {
     int debounce = 1;
     write_img_to_buffer(background, 0, 0);
     int click_value = get_knob_click(RED_KNOB, &debounce);
-    add_text_to_buffer("Highest score: %u", highest_player_score);
-    add_text_to_buffer("Last singleplayer score: %u", last_single_score);
-    add_text_to_buffer("Last multiplayer score: Red %u | Blue %u", last_multi_score1, last_multi_score2);
-    add_text_to_buffer("Number of pipes passed in all games: %u", all_pipes_passed);
+    get_stats_from_file();
     draw_buffer();
     sleep(1);
     while(1) {
@@ -163,7 +160,7 @@ void draw_stats() {
     }
 }
 
-void redraw_game_multiplayer(int player_count, GameObject_t **player_arr) {
+void redraw_game_multiplayer(int player_count, GameObject_t **player_arr, int isPlaying) {
   write_img_to_buffer(background, 0, 0);
   for (int i = 0; i < player_count; ++i) {
     write_img_to_buffer(player_arr[i]->img, player_arr[i]->x, player_arr[i]->y);
@@ -171,11 +168,12 @@ void redraw_game_multiplayer(int player_count, GameObject_t **player_arr) {
   for (int i = 0; i < 6; ++i) {
     write_img_to_buffer(pipe_pool[i].img, pipe_pool[i].x, pipe_pool[i].y);
   }
-  // add_text_to_buffer("Player score Player 1: %u | Player 2: %u | Player 3: &u", score_arrs[0], score_arrs[1], score_arrs[2]);
+  if(player_count == 1 && isPlaying == 1) {add_text_to_buffer("Bird score: %u", 0, 0, player_arr[0]->score);}
+  else if(isPlaying == 1) {add_multiplayer_score(player_arr, player_count);}
   draw_buffer();
 }
 
-void add_text_to_buffer(char *pattern, ...) {
+void add_text_to_buffer(char *pattern, int x, int y, ...) {
     va_list args;
     char str[5555];
 
@@ -183,5 +181,5 @@ void add_text_to_buffer(char *pattern, ...) {
     vsnprintf(str, sizeof(str), pattern, args);
     va_end(args);
 
-    draw_font(0, 0, 1, str, 0, CHANGING_WIDTH_FONT);
+    draw_font(x, y, 1, str, 0, CHANGING_WIDTH_FONT);
 }

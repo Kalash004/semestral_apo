@@ -63,7 +63,7 @@ void draw_pixel_big(int x, int y, unsigned short color, int scale);
 void draw_pixel(int x, int y, unsigned short color);
 void draw_char(unsigned int x_pos,unsigned int y_pos, int size, char ch, int ch_shift, int highlighted, font_descriptor_t *font);
 void draw_stats();
-void add_text_to_buffer(char *pattern, ...);
-void redraw_game_multiplayer(int player_count, GameObject_t **player_arr);
+void redraw_game_multiplayer(int player_count, GameObject_t **player_arr, int isPlaying);
+void add_text_to_buffer(char *pattern, int x, int y, ...);
 
 #endif

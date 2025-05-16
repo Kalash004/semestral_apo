@@ -27,6 +27,6 @@ extern unsigned int all_pipes_passed;
 void debug_print(char *pattern, ...);
 int char_width(int ch, font_descriptor_t *font);
 
-void get_stats_from_file(unsigned int *highest_players_score, unsigned int *all_pipes_passed);
-void get_stats_from_file(unsigned int *highest_players_score, unsigned int *all_pipes_passed);
+void get_stats_from_file();
+void save_stats_to_file(unsigned int highest_players_score, unsigned int last_singleplayer, unsigned int last_multiplayer[3]);
 #endif
