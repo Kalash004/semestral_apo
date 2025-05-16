@@ -20,10 +20,11 @@ void serialize() {
 }
 
 void program() {
-    get_stats_from_file(&highest_player_score, &all_pipes_passed);
+    
     origin_lcd = map_phys_address(PARLCD_REG_BASE_PHYS, PARLCD_REG_SIZE, 0);
     membase = map_phys_address(SPILED_REG_BASE_PHYS, SPILED_REG_SIZE, 0);
-
+    led_draw(0, 0x000000);
+    led_draw(1, 0x000000);
     background = ppm_load_image("/tmp/kolomcon/background.ppm");
     top_pipe = ppm_load_image("/tmp/kolomcon/top.ppm");
     btm_pipe = ppm_load_image("/tmp/kolomcon/bottom.ppm");
@@ -40,26 +41,10 @@ void program() {
     }
 
     GameObject_t bird_obj1;
-    bird_obj1.img = bird_red;
-    bird_obj1.debounce = 1;
-    bird_obj1.score = 0;
-    bird_obj1.health = 1;
-    bird_obj1.knob_id = RED_KNOB;
     
-
     GameObject_t bird_obj2;
-    bird_obj2.img = bird_blue;
-    bird_obj2.debounce = 1;
-    bird_obj2.score = 0;
-    bird_obj2.health = 1;
-    bird_obj2.knob_id = BLUE_KNOB;
 
     GameObject_t bird_obj3;
-    bird_obj3.img = bird1;
-    bird_obj3.debounce = 1;
-    bird_obj3.score = 0;
-    bird_obj3.health = 1;
-    bird_obj3.knob_id = GREEN_KNOB;
 
 
     GameObject_t **player_arr = calloc(sizeof(GameObject_t *), 3);
@@ -95,6 +80,7 @@ void add_to_player_arr(GameObject_t **player_arr, Img *bird_img, int knob_id, in
   player_arr[player_count-1]->knob_id = knob_id;
   player_arr[player_count-1]->y = y;
   player_arr[player_count-1]->x = x;
+  player_arr[player_count-1]->score = 0;
 }
 
 void choose_singleplayer_knob(GameObject_t **player_arr) {
@@ -102,6 +88,7 @@ void choose_singleplayer_knob(GameObject_t **player_arr) {
   draw_buffer();
   int debounce = 0;
   sleep(1);
+
   while (1) {
     if (get_knob_click(RED_KNOB, &debounce) == 1) {
       add_to_player_arr(player_arr, bird_red, RED_KNOB, 90, 145, 1);
@@ -118,7 +105,10 @@ void choose_singleplayer_knob(GameObject_t **player_arr) {
       break;
     }
   }
+  led_draw(0,0x00FF00);
+  led_draw(1,0x00FF00);
 }
+
 int choose_player_knobs(GameObject_t **player_arr) {
   write_img_to_buffer(background, 0, 0);
   draw_buffer();
@@ -156,8 +146,10 @@ int choose_player_knobs(GameObject_t **player_arr) {
         add_to_player_arr(player_arr, bird_blue, BLUE_KNOB, 370, 145, player_count);
       }
     }
-    redraw_game_multiplayer(player_count, player_arr);
+    redraw_game_multiplayer(player_count, player_arr, 0);
   }
+  led_draw(0,0x00FF00);
+  led_draw(1,0x00FF00);
   return player_count;
 }
 
@@ -220,7 +212,7 @@ void main_menu(options_t *opts, void *lcd) {
 }
 
 void exit_game() {
-  save_stats_to_file(highest_player_score, all_pipes_passed);
+  //save_stats_to_file(highest_player_score, all_pipes_passed);
   memset(origin_fb, 0x0, sizeof(origin_fb));
   draw_buffer();
   exit(0);

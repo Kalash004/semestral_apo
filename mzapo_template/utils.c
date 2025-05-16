@@ -22,17 +22,29 @@ int char_width(int ch, font_descriptor_t *font) {
   return width;
 }
 
-void get_stats_from_file(unsigned int *highest_players_score, unsigned int *all_pipes_passed) {
-  FILE *file = fopen("stats.txt", "r");
+void get_stats_from_file() {
+  FILE *file = fopen("/tmp/kolomcon/stats.txt", "r");
    if (file == NULL) {
        perror("Error opening file");
        return 1;
    }
 
-   int players_score, pipes_passed;
-   if (fscanf(file, "%u %u", &players_score, &pipes_passed) == 2) {
-       *highest_players_score = players_score;
-       *all_pipes_passed = pipes_passed;
+   int players_score;
+   if (fscanf(file, "%u", &players_score) == 1) {
+     add_text_to_buffer("Highest player score: %u", 0, 0, &players_score);
+   } else {
+       perror("Failed to read data from file.\n");
+   }
+
+   if (fscanf(file, " %u", &players_score) == 1) {
+     add_text_to_buffer("Last single player score: %u", 0, 50, &players_score);
+   } else {
+       perror("Failed to read data from file.\n");
+   }
+
+  int player1_score, player2_score, player3_score;
+   if (fscanf(file, " %u %u %u", &player1_score, &player2_score, &player3_score) == 2) {
+     add_text_to_buffer("Last single player score: Red %u | Green %d | Blue %d", 0, 100, &players_score);
    } else {
        perror("Failed to read data from file.\n");
    }
@@ -41,13 +53,13 @@ void get_stats_from_file(unsigned int *highest_players_score, unsigned int *all_
 
 }
 
-void save_stats_to_file(unsigned int highest_players_score, unsigned int all_pipes_passed) {
+void save_stats_to_file(unsigned int highest_players_score, unsigned int last_singleplayer, unsigned int last_multiplayer[3]) {
   FILE *file = fopen("stats.txt", "w");
    if (file == NULL) {
        perror("Error opening file");
        return 1;
    }
 
-   fprintf(file, "%u %u", highest_players_score, all_pipes_passed);
+   fprintf(file, "%u %u %u %u %u", highest_players_score, last_singleplayer, last_multiplayer[0], last_multiplayer[1], last_multiplayer[2]);
    fclose(file);
 }

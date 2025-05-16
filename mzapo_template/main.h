@@ -47,8 +47,7 @@ Img *btm_pipe;
 GameObject_t *pipe_pool;
 unsigned int highest_player_score;
 unsigned int last_single_score;
-unsigned int last_multi_score1;
-unsigned int last_multi_score2;
+unsigned int last_multi_scores[3];
 unsigned int all_pipes_passed;
 
 void main_menu(options_t *opts, void *lcd);

@@ -88,6 +88,7 @@ init: $(TARGET_EXE)
 	scp background.ppm root@$(TARGET_IP):$(TARGET_DIR)/background.ppm
 	scp bird_blue.ppm root@$(TARGET_IP):$(TARGET_DIR)/bird_blue.ppm
 	scp bird_red.ppm root@$(TARGET_IP):$(TARGET_DIR)/bird_red.ppm
+	scp stats.txt root@$(TARGET_IP):$(TARGET_DIR)/stats.txt
 
 
 ifneq ($(filter -o ProxyJump=,$(SSH_OPTIONS))$(SSH_GDB_TUNNEL_REQUIRED),)

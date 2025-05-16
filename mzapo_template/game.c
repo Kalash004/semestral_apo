@@ -6,6 +6,10 @@ void restart_game_objects_multi(int player_count, GameObject_t **player_object_a
     player_object_arr[i]->health = 1;
     player_object_arr[i]->x = 75;
     player_object_arr[i]->y = 80 + ((i+1) * 20) + (30 / player_count);  
+    player_object_arr[i]->score = 0;
+  }
+  for(int i = player_count; i < 3; ++i) {
+    player_object_arr[i]->score = 0;
   }
 }
 
@@ -53,10 +57,25 @@ void update_pipes() {
   }
 }
 
+void add_multiplayer_score(GameObject_t **player_object_arr, int player_count) {
+  unsigned int score[3] = {0};
+  memset(score, 0, 3);  
+  printf("--------\n");
+  for(int i = 0; i < player_count; ++i) {
+    GameObject_t *player_obj = player_object_arr[i];
+    score[player_obj->knob_id] = player_obj->score;
+    printf("Test %d Score %d\n",player_obj->knob_id, player_obj->score);
+  }
+  printf("--------\n");
+  add_text_to_buffer("Bird score: Red %u | Green %u | Blue %u", 0, 0, score[2], score[1], score[0]);
+}
+
 void play(int player_count, GameObject_t **player_object_arr) {
   restart_game_objects_multi(player_count, player_object_arr);
-  redraw_game_multiplayer(player_count, player_object_arr);
+  redraw_game_multiplayer(player_count, player_object_arr, 0);
   get_start_click();
+  led_draw(0,0x000000);
+  led_draw(1,0x000000);
   while (1) {
     for (int i = 0; i < player_count; ++i) {
       if (player_object_arr[i]->health <= 0) continue;
@@ -75,9 +94,11 @@ void play(int player_count, GameObject_t **player_object_arr) {
     for (int i = 0; i < player_count; ++i) {
       health_sum += player_object_arr[i]->health;
     }
-    if (health_sum <= 0) break;
+    if (health_sum <= 0) {
+      break;
+    }
     update_pipes();
-    redraw_game_multiplayer(player_count, player_object_arr);
+    redraw_game_multiplayer(player_count, player_object_arr, 1);
   }
 }
 
