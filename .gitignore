@@ -1,0 +1,4 @@
+*.o
+depend
+change_me
+connect.gdb
