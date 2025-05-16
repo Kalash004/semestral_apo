@@ -44,7 +44,7 @@ int get_highest_score() {
   }
   fclose(file);
   return players_score;
-}
+}   
 
 void save_stats_to_file(unsigned int highest_players_score, int flag, unsigned int last_game_score[3], unsigned int last_single_game_score) {
   char path[100];
