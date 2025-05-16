@@ -59,14 +59,11 @@ void update_pipes() {
 
 void add_multiplayer_score(GameObject_t **player_object_arr, int player_count) {
   unsigned int score[3] = {0};
-  memset(score, 0, 3);  
-  printf("--------\n");
+  memset(score, 0, 3 * sizeof(unsigned int));  
   for(int i = 0; i < player_count; ++i) {
     GameObject_t *player_obj = player_object_arr[i];
     score[player_obj->knob_id] = player_obj->score;
-    printf("Test %d Score %d\n",player_obj->knob_id, player_obj->score);
   }
-  printf("--------\n");
   add_text_to_buffer("Bird score: Red %u | Green %u | Blue %u", 0, 0, score[2], score[1], score[0]);
 }
 
@@ -100,6 +97,29 @@ void play(int player_count, GameObject_t **player_object_arr) {
     update_pipes();
     redraw_game_multiplayer(player_count, player_object_arr, 1);
   }
+  process_stats(player_object_arr, player_count);
+  
+}
+
+void process_stats(GameObject_t **player_object_arr, int player_count) {
+  int highest_player_score = get_highest_score();
+  for (int i = 0; i < player_count; ++i) {
+    highest_player_score = max(highest_player_score, player_object_arr[i]->score);
+  }
+  if(player_count == 1) {
+    save_stats_to_file(highest_player_score, player_count, NULL, player_object_arr[0]->score);
+  } else {
+    unsigned int score[3];
+    score[0] = 0;
+    score[1] = 0;
+    score[2] = 0;
+    for (int i = 0; i < player_count; ++i) {
+      score[player_object_arr[i]->knob_id] = player_object_arr[i]->score;
+    }
+    save_stats_to_file(highest_player_score, player_count, score, 0);
+
+  }
+
 }
 
 void get_start_click() {

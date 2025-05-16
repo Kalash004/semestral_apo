@@ -14,6 +14,8 @@
 #include <unistd.h>
 #include <string.h>
 
+#include "stats.h"
+#include "header.h"
 #include "img.h"
 #include "game.h"
 
@@ -38,9 +40,8 @@
 #define SAME_WIDTH_FONT 0
 #define CHANGING_WIDTH_FONT 1
 
-typedef struct Pixel;
-typedef struct Img;
-typedef struct GameObject_t;
+
+
 
 extern unsigned char *membase;
 extern uint16_t origin_fb[480][320];
@@ -53,6 +54,8 @@ extern Img *top_pipe;
 extern Img *btm_pipe;
 extern unsigned int highest_player_score;
 
+
+int char_width(int ch, font_descriptor_t *font);
 void draw_menu_bars(int highlighted, int x, int y, int padding);
 void draw_buffer();
 void write_img_to_buffer(Img* img, int x_pos, int y_pos);

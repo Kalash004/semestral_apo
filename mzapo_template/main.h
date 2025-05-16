@@ -17,23 +17,18 @@
 #include "img.h"
 #include "game.h"
 #include "graphics.h"
-#include "utils.h"
 #include "peripherals.h"
+#include "stats.h"
+#include "header.h"
+#include "serialize_lock.h"
 
+#ifndef _POSIX_C_SOURCE
 #define _POSIX_C_SOURCE 200112L
+#endif
 #define RED_KNOB 2
 #define BLUE_KNOB 0
 #define GREEN_KNOB 1
 
-typedef struct {
-  int game_mode;
-  char p;  
-} options_t;
-
-typedef struct Pixel;  // Forward declaration
-typedef struct Imgs;  // Forward declaration
-typedef struct options_t;  // Forward declaration
-typedef struct GameObject_t;  // Forward declaration
 
 unsigned char *membase;
 uint16_t origin_fb[480][320];

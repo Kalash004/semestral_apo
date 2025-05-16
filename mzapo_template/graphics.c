@@ -90,20 +90,19 @@ int draw_sparse_char(int x_pos, int y_pos, char ch, int highlighted, int scale, 
   return font->maxwidth * scale;
 }
 
-void draw_font(unsigned int x_pos,unsigned int y_pos, int size, char *str, int highlighted, int font_style) {
+void draw_font(unsigned int x_pos ,unsigned int y_pos, int size, char *str, int highlighted, int font_style) {
   font_descriptor_t *font;
   if(font_style == SAME_WIDTH_FONT) {font = &font_rom8x16;}
   else if(font_style == CHANGING_WIDTH_FONT) {font = &font_winFreeSystem14x16;}
   // Fill buffer
   for(size_t i = 0; i < strlen(str); ++i) {
     //draw_char(x_pos, y_pos, size, str[i], i, highlighted, font);
-    int w;
+    int w = 0;
     if(font_style == SAME_WIDTH_FONT) {
       w = draw_sparse_char(x_pos, y_pos, str[i], highlighted, size, font);
 
     } else if(font_style == CHANGING_WIDTH_FONT) {
       w = draw_changing_width_char(x_pos, y_pos, str[i], highlighted, size, font);
-
     }
     x_pos += w;
   }
@@ -148,7 +147,7 @@ void draw_menu_bars(int highlighted, int x, int y, int padding) {
 void draw_stats() {
     int debounce = 1;
     write_img_to_buffer(background, 0, 0);
-    int click_value = get_knob_click(RED_KNOB, &debounce);
+    get_knob_click(RED_KNOB, &debounce);
     get_stats_from_file();
     draw_buffer();
     sleep(1);
@@ -177,9 +176,19 @@ void add_text_to_buffer(char *pattern, int x, int y, ...) {
     va_list args;
     char str[5555];
 
-    va_start(args, origin_fb);
+    va_start(args, y);
     vsnprintf(str, sizeof(str), pattern, args);
     va_end(args);
 
     draw_font(x, y, 1, str, 0, CHANGING_WIDTH_FONT);
+}
+
+int char_width(int ch, font_descriptor_t *font) {
+  int width;
+  if (!font->width) {
+    width = font->maxwidth;
+  } else {
+    width = font->width[ch-font->firstchar];
+  }
+  return width;
 }

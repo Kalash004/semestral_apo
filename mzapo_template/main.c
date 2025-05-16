@@ -20,17 +20,22 @@ void serialize() {
 }
 
 void program() {
-    
+    char path[100] = PATH;
     origin_lcd = map_phys_address(PARLCD_REG_BASE_PHYS, PARLCD_REG_SIZE, 0);
     membase = map_phys_address(SPILED_REG_BASE_PHYS, SPILED_REG_SIZE, 0);
     led_draw(0, 0x000000);
     led_draw(1, 0x000000);
-    background = ppm_load_image("/tmp/kolomcon/background.ppm");
-    top_pipe = ppm_load_image("/tmp/kolomcon/top.ppm");
-    btm_pipe = ppm_load_image("/tmp/kolomcon/bottom.ppm");
-    bird1 = ppm_load_image("/tmp/kolomcon/bird1.ppm");
-    bird_blue = ppm_load_image("/tmp/kolomcon/bird_blue.ppm");
-    bird_red = ppm_load_image("/tmp/kolomcon/bird_red.ppm");
+    background = ppm_load_image(strcat(path,"background.ppm"));
+    strcpy(path, PATH);
+    top_pipe = ppm_load_image(strcat(path,"top.ppm"));
+    strcpy(path, PATH);
+    btm_pipe = ppm_load_image(strcat(path,"bottom.ppm"));
+    strcpy(path, PATH);
+    bird1 = ppm_load_image(strcat(path,"bird1.ppm"));
+    strcpy(path, PATH);
+    bird_blue = ppm_load_image(strcat(path,"bird_blue.ppm"));
+    strcpy(path, PATH);
+    bird_red = ppm_load_image(strcat(path, "bird_red.ppm"));
 
     pipe_pool = calloc(sizeof(GameObject_t), 6);
     for (int i = 0; i < 3; ++i) {
@@ -155,12 +160,9 @@ int choose_player_knobs(GameObject_t **player_arr) {
 
 void main_menu(options_t *opts, void *lcd) {
   // Frame buffer
-  uint16_t origin_fb[480][320] = {0x0};
   //memset(origin_fb, 0x0, sizeof(origin_fb));
   write_img_to_buffer(background, 0, 0);
   draw_buffer();
-  volatile uint32_t knobs_value = 0;
-
  // Big fonts
   int highlited_index = -1;
   draw_font(100, 10, 3, "FLAPPY BIRD", 2, CHANGING_WIDTH_FONT);
