@@ -2,7 +2,7 @@ CC = arm-linux-gnueabihf-gcc
 CXX = arm-linux-gnueabihf-g++
 
 CPPFLAGS = -I .
-CFLAGS =-g -std=gnu99 -O1 -Wall
+CFLAGS =-g -std=gnu99 -O1 -Wall 
 CXXFLAGS = -g -std=gnu++11 -O1 -Wall
 #LDFLAGS +=
 LDFLAGS += -static
@@ -22,6 +22,7 @@ endif
 endif
 TARGET_DIR ?= /tmp/$(shell whoami)
 TARGET_USER ?= root
+CFLAGS += -DPATH="$(TARGET_DIR)/"
 # for use from Eduroam network use TARGET_IP=localhost and enable next line
 #SSH_OPTIONS=-o "UserKnownHostsFile=/dev/null" -o "StrictHostKeyChecking=no" -o "Port=2222"
 #SSH_GDB_TUNNEL_REQUIRED=y

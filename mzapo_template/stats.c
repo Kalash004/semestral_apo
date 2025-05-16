@@ -62,7 +62,6 @@ void save_stats_to_file(unsigned int highest_players_score, int flag, unsigned i
         break;
      case 1:
         fprintf(file, "%u\n", highest_players_score);
-        printf("LAST %u\n", last_single_game_score);
 
         fprintf(file, "%u\n", last_single_game_score);
         fflush(file);
@@ -70,7 +69,6 @@ void save_stats_to_file(unsigned int highest_players_score, int flag, unsigned i
      default:
         fprintf(file, "%u\n", highest_players_score);
         fscanf(file,"%u\n", &line);
-        printf("%u %u %u\n", last_game_score[0], last_game_score[1], last_game_score[2]);
         fprintf(file, "%u %u %u\n", last_game_score[2], last_game_score[1], last_game_score[0]);
         fflush(file);
         break;

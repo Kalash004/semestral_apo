@@ -72,7 +72,6 @@ void program() {
                 play(player_count, player_arr);
                 break;
             case 3:
-                printf("Game mode %d\n", options.game_mode);
                 draw_stats();
                 break;
         }
