@@ -107,14 +107,15 @@ void redraw_game_singleplayer(unsigned int player1_score) {
 }
 
 
-void redraw_game_multiplayer(unsigned int player1_score, unsigned int player2_score) {
+void redraw_game_multiplayer(int player_count, unsigned int *score_arrs, GameObject_t **player_arr) {
   write_img_to_buffer(background, 0, 0);
-  write_img_to_buffer(bird_obj->img, bird_obj->x, bird_obj->y);
-  write_img_to_buffer(bird_obj2->img, bird_obj2->x, bird_obj2->y);
+  for (int i = 0; i < player_count; ++i) {
+    write_img_to_buffer(player_arr[i]->img, player_arr[i]->x, player_arr[i]->y);
+  }
   for (int i = 0; i < 6; ++i) {
     write_img_to_buffer(pipe_pool[i].img, pipe_pool[i].x, pipe_pool[i].y);
   }
-  add_text_to_buffer("Player score Red: %u | Blue %u", player1_score, player2_score);
+  add_text_to_buffer("Player score Player 1: %u | Player 2: %u | Player 3: &u", score_arrs[0], score_arrs[1], score_arrs[2]);
   draw_buffer();
 }
 

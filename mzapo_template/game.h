@@ -26,6 +26,7 @@
 // Bird jump/gravity settings
 #define GRAVITY_FORCE 4
 #define JUMP_PER_FRAME 5
+#define JUMP_FORCE 30
 typedef struct Pixel;
 typedef struct Img;
 
@@ -57,7 +58,7 @@ void restart_game_objects_multi();
 void restart_pipes();
 void physics(GameObject_t *player_obj, long long delta_time);
 void update_pipes();
-int play_multiplayer();
+void play(int player_count, unsigned int *scores_arr, int *health_arr, int *debounce_holder_arr, GameObject_t **player_object_arr, int *knobs_identif_arr) {
 int check_multiplayer_lost();
 int check_hitbox_hit(GameObject_t *player);
 

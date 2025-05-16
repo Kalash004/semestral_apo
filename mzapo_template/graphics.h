@@ -59,7 +59,7 @@ void draw_font(unsigned int x_pos,unsigned int y_pos, int size, char *str, int h
 int draw_game(uint16_t origin_fb[480][320], void *lcd, int highlighted, int x, int y, int padding); //test method
 void draw_stats();
 void redraw_game_singleplayer(unsigned int player1_score);
-void redraw_game_multiplayer(unsigned int player1_score, unsigned int player2_score);
+void redraw_game_multiplayer(int player_count, unsigned int *score_arrs, GameObject_t **player_arr);
 void add_text_to_buffer(char *pattern, ...);
 
 #endif

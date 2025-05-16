@@ -20,10 +20,10 @@
 #include "utils.h"
 #include "knobs.h"
 
-
-
 #define _POSIX_C_SOURCE 200112L
-
+#define RED_KNOB 2
+#define BLUE_KNOB 0
+#define GREEN_KNOB 1
 
 typedef struct {
   int game_mode;

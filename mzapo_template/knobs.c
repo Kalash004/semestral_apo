@@ -29,7 +29,7 @@ int get_knob_click(int knob_num, int *debounce) {
     current_value = (*(volatile uint32_t*)(membase + SPILED_REG_KNOBS_8BIT_o) >> (24 + RED_KNOB)) & 0xff;
   } else if(knob_num == BLUE_KNOB) {
     current_value = (*(volatile uint32_t*)(membase + SPILED_REG_KNOBS_8BIT_o) >> (24 + BLUE_KNOB)) & 0x01;
-
+  
   }
   if(current_value == 1 && *debounce == 1) {
     *debounce = 0;

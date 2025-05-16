@@ -12,6 +12,7 @@ int check_multiplayer_lost();
 int check_hitbox_hit(GameObject_t *player);
 
 
+
 void restart_game_objects() {
   restart_pipes();
   bird_obj->x = 75;
@@ -41,11 +42,6 @@ void restart_pipes() {
     btm->img = btm_pipe;
   }
 }
-
-
-
-
-
 
 
 // give last time and current time
@@ -79,101 +75,38 @@ void update_pipes() {
   }
 }
 
-int play_multiplayer() {
-  unsigned int player1_score = 0;
-  unsigned int player2_score = 0;
-  int health = 1;
-  int health2 = 1;
-  int red_debounce = 1;
-  int blue_debounce = 1;
+void play(int player_count, int start_id, unsigned int *scores_arr, int *health_arr, int *debounce_holder_arr, GameObject_t **player_object_arr, int *knobs_identif_arr) {
   restart_game_objects_multi();
-  redraw_game_multiplayer(player1_score, player2_score);
+  redraw_game_multiplayer(player_count, scores_arr, player_object_arr);
   int clicked = 0;
-  sleep(1);
-  while (clicked == 0) {
-    clicked = get_knob_click(RED_KNOB, &red_debounce);
-  }
-  struct timespec old, new; 
+  get_start_click(&clicked);
   while (1) {
-    clock_gettime(CLOCK_MONOTONIC, &new);
-    long long start_ns = old.tv_sec * 1e9 + old.tv_nsec;
-    long long end_ns = new.tv_sec * 1e9 + new.tv_nsec;
-    long long delta_time_ns = end_ns - start_ns;
-    printf("Time: %lli - %lli = %lli\n", end_ns, start_ns, delta_time_ns);
-    //int clicked_red = get_knob_click(RED_KNOB, &red_debounce);
-    //int clicked_blue = get_knob_click(BLUE_KNOB, &blue_debounce);
-    int clicked_red = get_knob_click(RED_KNOB, &red_debounce);
-    if (clicked_red == 1) {
-      bird_obj->acceleration_x += 30;
-    }
-    int clicked_blue = get_knob_click(BLUE_KNOB, &blue_debounce);
-    if (clicked_blue == 1) {
-      bird_obj2->acceleration_x += 30;
-    }  
+    for (int i = start_id; i < player_count; ++i) {
+      if (health_arr[i] <= 0) continue;
+      int clicked = get_knob_click(knobs_identif_arr[i], &debounce_holder_arr[i]);
+      if (clicked == 1) {
+        player_object_arr[i]->acceleration_x += JUMP_FORCE;
+      }
 
-    if (health > 0) {
-      physics(bird_obj, delta_time_ns);
+      physics(&player_object_arr[i]);
+
+      int check = check_player_lost(&player_object_arr[i]);
+      if (check == -1 && health_arr[i] > 0) health_arr[i]--;
+      if (check == 1 && health > 0) scores_arr[i]++;
     }
-    if (health2 > 0) {
-      physics(bird_obj2, delta_time_ns);
-    } 
-    
-    clock_gettime(CLOCK_MONOTONIC, &old);;
     update_pipes();
-    int check = check_player_lost(bird_obj);
-    if (check == -1 && health > 0) {
-      health--;
-    } 
-    else if(check == 1 && health > 0) {
-      player1_score++;
-    }
-    check = check_player_lost(bird_obj2);
-    if (check == -1 && health2 > 0) { 
-      health2--;
-    } 
-    else if(check == 1 && health2 > 0) {
-      player2_score++;
-    }
-    if (health + health2 <= 0) break;
-    redraw_game_multiplayer(player1_score, player2_score);
-    
+    redraw_game_multiplayer(player_count, scores_arr, player_object_arr);
   }
-  return (player1_score > player2_score ? player1_score : player2_score);
 }
 
-
-int play_singleplayer() {
-  int debounce = 1;
-  unsigned int player1_score = 0;
-  int health = 1;
-  restart_game_objects();
-  redraw_game_singleplayer(player1_score);
-  int clicked = 0;
+void get_start_click(int *clicked) {
+  int *rebounce;
+  *clicked = 0;
   sleep(1);
-  while (clicked == 0) {
-    clicked = get_knob_click(RED_KNOB, &debounce);
+  while (*clicked == 0) {
+    *clicked = get_knob_click(RED_KNOB, rebounce);
   }
-  struct timespec old, new; 
-  while (1) {
-    clock_gettime(CLOCK_MONOTONIC, &new);
-    long long start_ns = old.tv_sec * 1e9 + old.tv_nsec;
-    long long end_ns = new.tv_sec * 1e9 + new.tv_nsec;
-    long long delta_time_ns = end_ns - start_ns;
-    physics(bird_obj, delta_time_ns); // TODO: think about values 
-    clicked = get_knob_click(RED_KNOB, &debounce);
-    if (clicked == 1) {
-      bird_obj->acceleration_x += 30;
-    }
-    clock_gettime(CLOCK_MONOTONIC, &old);;
-    update_pipes();
-    if (check_player_lost(bird_obj) == -1) health--; // Maybe ?
-    else if(check_player_lost(bird_obj) == 1 && health > 0) player1_score++;
-    if (health < 0) break;
-    redraw_game_singleplayer(player1_score);
-  }
-  return player1_score;
 }
-
 
 int check_player_lost(GameObject_t *player_obj) {
   return check_hitbox_hit(player_obj);

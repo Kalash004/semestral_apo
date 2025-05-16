@@ -24,9 +24,9 @@ void program() {
     membase = map_phys_address(SPILED_REG_BASE_PHYS, SPILED_REG_SIZE, 0);
 
     background = ppm_load_image("/tmp/kolomcon/background.ppm");
-    bird1 = ppm_load_image("/tmp/kolomcon/bird1.ppm");
     top_pipe = ppm_load_image("/tmp/kolomcon/top.ppm");
     btm_pipe = ppm_load_image("/tmp/kolomcon/bottom.ppm");
+    bird1 = ppm_load_image("/tmp/kolomcon/bird1.ppm");
     bird_blue = ppm_load_image("/tmp/kolomcon/bird_blue.ppm");
     bird_red = ppm_load_image("/tmp/kolomcon/bird_red.ppm");
 
@@ -38,22 +38,39 @@ void program() {
         pipe_pool[i + 3] = btm;
     }
 
-    bird_obj = calloc(sizeof(GameObject_t), 1);
-    bird_obj->img = bird1;
+    bird_obj1 = calloc(sizeof(GameObject_t), 1);
+    bird_obj1->img = bird_red;
 
     bird_obj2 = calloc(sizeof(GameObject_t), 1);
-    bird_obj2->img = bird1;
+    bird_obj2->img = bird_blue;
+
+    bird_obj3 = calloc(sizeof(GameObject_t), 1);
+    bird_obj3->img = bird1;
+
+    GameObject_t **player_arr = calloc(sizeof(GameObject_t *), 3);
+    player_arr[0] = bird_obj1;
+    player_arr[1] = bird_obj2;
+    player_arr[2] = bird_obj3;
+
+    unsigned int score_arr[3] = {0};
+    int health_arr[3] = {0};
+    int debounce_holder_arr[3] = {1};
+    
+    int knobs_id_arr[3];
+    knobs_id_arr[0] = RED_KNOB;
+    knobs_id_arr[1] = BLUE_KNOB;
+    knobs_id_arr[2] = GREEN_KNOB;
+
 
     while (1) {
         options_t options;
         main_menu(&options, origin_lcd);
-
         switch (options.game_mode) {
             case 1:
-                highest_player_score = max(highest_player_score, play_singleplayer());
+                play(3, 2, score_arr, health_arr, debounce_holder_arr, player_arr, knobs_id_arr)
                 break;
             case 2:
-                highest_player_score = max(highest_player_score, play_multiplayer());
+                play(2, 0, score_arr, health_arr, debounce_holder_arr, player_arr, knobs_id_arr)
                 break;
             case 3:
                 printf("Game mode %d\n", options.game_mode);
