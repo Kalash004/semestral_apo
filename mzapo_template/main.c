@@ -1,6 +1,11 @@
 
 #include "main.h"
+/*
+This module manages the initialization of game assets, input device setup, image loading, pipe configuration, and the game’s main loop. 
+It includes logic for both single-player and multiplayer modes and handles main menu navigation via rotary knobs and clicks.
+*/
 
+//entry point
 int main(int argc, char *argv[])
 {
     serialize();
@@ -19,6 +24,7 @@ void serialize() {
     }
 }
 
+// initializes framebuffer, LED, and game assets (images, pipes, and player data), handles game mode selection in main menu
 void program() {
     char path[100] = PATH;
     origin_lcd = map_phys_address(PARLCD_REG_BASE_PHYS, PARLCD_REG_SIZE, 0);
@@ -78,7 +84,7 @@ void program() {
     }
 }
 
-
+// utility to set info about a newly chosen player
 void add_to_player_arr(GameObject_t **player_arr, Img *bird_img, int knob_id, int x, int y, int player_count) {
   player_arr[player_count-1]->img = bird_img;
   player_arr[player_count-1]->knob_id = knob_id;
@@ -87,12 +93,14 @@ void add_to_player_arr(GameObject_t **player_arr, Img *bird_img, int knob_id, in
   player_arr[player_count-1]->score = 0;
 }
 
+// for Play Singleplayer: wait until the user chooses their knob and add it to the player array
 void choose_singleplayer_knob(GameObject_t **player_arr) {
   write_img_to_buffer(background, 0, 0);
   draw_buffer();
   int debounce = 0;
   sleep(1);
-
+  led_draw(0, 0xFFFF00); // yellow led
+  led_draw(1, 0xFFFF00);
   while (1) {
     if (get_knob_click(RED_KNOB, &debounce) == 1) {
       add_to_player_arr(player_arr, bird_red, RED_KNOB, 90, 145, 1);
@@ -109,10 +117,11 @@ void choose_singleplayer_knob(GameObject_t **player_arr) {
       break;
     }
   }
-  led_draw(0,0x00FF00);
+  led_draw(0,0x00FF00); // green led
   led_draw(1,0x00FF00);
 }
 
+// for Play Multiplayer: wait until 2-3 users choose their knobs and add them to the player array
 int choose_player_knobs(GameObject_t **player_arr) {
   write_img_to_buffer(background, 0, 0);
   draw_buffer();
@@ -125,6 +134,8 @@ int choose_player_knobs(GameObject_t **player_arr) {
   int green_debounce = 1;
   int blue_debounce = 1;
   sleep(1);
+  led_draw(0, 0xFFFF00); // yellow led 
+  led_draw(1, 0xFFFF00);
   while (1) {
     if ((red_clicked > 1 || blue_clicked > 1 || green_clicked > 1) && player_count >= 2) break;
     if (get_knob_click(RED_KNOB, &red_debounce) == 1) {
@@ -152,17 +163,18 @@ int choose_player_knobs(GameObject_t **player_arr) {
     }
     redraw_game_multiplayer(player_count, player_arr, 0);
   }
-  led_draw(0,0x00FF00);
+  led_draw(0,0x00FF00); // green led
   led_draw(1,0x00FF00);
   return player_count;
 }
 
+// draws main menu and sets index based on current knob rotation changes
 void main_menu(options_t *opts, void *lcd) {
   // Frame buffer
-  //memset(origin_fb, 0x0, sizeof(origin_fb));
+  // memset(origin_fb, 0x0, sizeof(origin_fb));
   write_img_to_buffer(background, 0, 0);
   draw_buffer();
- // Big fonts
+ // Big sparse fonts
   int highlited_index = -1;
   draw_font(100, 10, 3, "FLAPPY BIRD", 2, CHANGING_WIDTH_FONT);
   draw_menu_bars(highlited_index, 100, 100, 40);
@@ -213,7 +225,6 @@ void main_menu(options_t *opts, void *lcd) {
 }
 
 void exit_game() {
-  //save_stats_to_file(highest_player_score, all_pipes_passed);
   memset(origin_fb, 0x0, sizeof(origin_fb));
   draw_buffer();
   exit(0);

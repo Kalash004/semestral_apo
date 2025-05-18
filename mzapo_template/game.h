@@ -38,6 +38,15 @@
 #define JUMP_PER_FRAME 5
 #define JUMP_FORCE 30
 
+// Pipe presets
+#define PIPE_SCORE_RANGE 60 // when pipe passes this x value, player gets +1 score
+#define PIPE_LEFTMOST_POSITION -100
+#define PIPE_RIGHTMOST_POSITION 620
+#define PIPE_GAP_YRANGE 190
+#define PIPE_TOPMOST_POSITION -320
+#define PIPE_SHIFT 3
+#define PIPE_GAP_XRANGE 240
+
 extern unsigned char *membase;
 extern uint16_t origin_fb[480][320];
 extern void *origin_lcd;

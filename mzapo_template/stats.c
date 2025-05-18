@@ -1,5 +1,11 @@
 #include "stats.h"
 
+/*
+This module handles reading and writing player statistics to a file. 
+It supports retrieving the highest score, last single player score, and last multiplayer scores, and saving updated statistics after each game session.
+*/
+
+// get data from file (3 lines, 5 numbers, used to load when stats are opened)
 void get_stats_from_file() {
     char path[100];
     strcpy(path, PATH);
@@ -32,6 +38,7 @@ void get_stats_from_file() {
    fclose(file);
 }
 
+// get only highest score data from file (used to load when each game ends)
 int get_highest_score() {
     char path[100];
     strcpy(path, PATH);
@@ -46,6 +53,7 @@ int get_highest_score() {
   return players_score;
 }   
 
+// after comparing with a new game, save stats to file
 void save_stats_to_file(unsigned int highest_players_score, int flag, unsigned int last_game_score[3], unsigned int last_single_game_score) {
   char path[100];
   strcpy(path, PATH);
@@ -55,19 +63,16 @@ void save_stats_to_file(unsigned int highest_players_score, int flag, unsigned i
        return;
    }
    unsigned int line = 0;
+   fprintf(file, "%u\n", highest_players_score);
    switch(flag) {
-     case 0:
-        fprintf(file, "%u\n", highest_players_score);
+     case 0: // = update highest score/line 0 only
         fflush(file);
         break;
-     case 1:
-        fprintf(file, "%u\n", highest_players_score);
-
+     case 1: // = update highest score & singleplayer/line 0 and 1
         fprintf(file, "%u\n", last_single_game_score);
         fflush(file);
         break;
-     default:
-        fprintf(file, "%u\n", highest_players_score);
+     default: // = update highest score & multiplayer/line 0 and 2
         fscanf(file,"%u\n", &line);
         fprintf(file, "%u %u %u\n", last_game_score[2], last_game_score[1], last_game_score[0]);
         fflush(file);

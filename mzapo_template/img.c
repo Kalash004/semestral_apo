@@ -1,7 +1,11 @@
 
 #include "img.h"
+/*
+This module provides functionality to load PPM (P6) images from disk into a structured format
+and convert pixel RGB values to 16-bit RGB565 hexadecimal format suitable for display. 
+*/
 
-
+// convert to rgb565 format
 uint32_t convert_rgb_to_hexa(Pixel rgb) {
     uint16_t r = ((uint32_t)rgb.red  >> 3) & 0x1F; // 5 bits
     uint16_t g = ((uint32_t)rgb.green >> 2) & 0x3F; // 6 bits
@@ -10,6 +14,7 @@ uint32_t convert_rgb_to_hexa(Pixel rgb) {
     return (r << 11) | (g << 5) | b;
 }
 
+// load img to an Img structure
 Img* ppm_load_image(char *path) {
     char buff[16];
     Img *img;
