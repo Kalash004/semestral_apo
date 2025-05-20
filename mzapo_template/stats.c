@@ -8,7 +8,7 @@ It supports retrieving the highest score, last single player score, and last mul
 // get data from file (3 lines, 5 numbers, used to load when stats are opened)
 void get_stats_from_file() {
     char path[100];
-    strcpy(path, PATH);
+    strcpy(path, IMGPATH);
     FILE *file = fopen(strcat(path,"stats.txt"), "r");
     if (file == NULL) {
        perror("Error opening file");
@@ -41,7 +41,7 @@ void get_stats_from_file() {
 // get only highest score data from file (used to load when each game ends)
 int get_highest_score() {
     char path[100];
-    strcpy(path, PATH);
+    strcpy(path, IMGPATH);
   FILE *file = fopen(strcat(path,"stats.txt"), "r");
   int players_score;
   if (fscanf(file, "%u", &players_score) == 1) {
@@ -56,7 +56,7 @@ int get_highest_score() {
 // after comparing with a new game, save stats to file
 void save_stats_to_file(unsigned int highest_players_score, int flag, unsigned int last_game_score[3], unsigned int last_single_game_score) {
   char path[100];
-  strcpy(path, PATH);
+  strcpy(path, IMGPATH);
   FILE *file = fopen(strcat(path,"stats.txt"), "r+");
    if (file == NULL) {
        perror("Error opening file");

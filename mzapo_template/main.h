@@ -29,7 +29,6 @@
 #define BLUE_KNOB 0
 #define GREEN_KNOB 1
 
-
 unsigned char *membase;
 uint16_t origin_fb[480][320];
 void *origin_lcd;

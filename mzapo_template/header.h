@@ -1,8 +1,6 @@
 #ifndef HEADER_H
 #define HEADER_H
 
-#define PATH "/tmp/kolomcon/"
-
 typedef struct {
     unsigned char red;
     unsigned char green;

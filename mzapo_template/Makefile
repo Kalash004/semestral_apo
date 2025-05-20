@@ -22,7 +22,9 @@ endif
 endif
 TARGET_DIR ?= /tmp/$(shell whoami)
 TARGET_USER ?= root
-CFLAGS += -DPATH="$(TARGET_DIR)/"
+CFLAGS += -DIMGPATH=\"./\"
+# CFLAGS += -DIMGPATH=\"$(TARGET_DIR)/\"
+
 # for use from Eduroam network use TARGET_IP=localhost and enable next line
 #SSH_OPTIONS=-o "UserKnownHostsFile=/dev/null" -o "StrictHostKeyChecking=no" -o "Port=2222"
 #SSH_GDB_TUNNEL_REQUIRED=y

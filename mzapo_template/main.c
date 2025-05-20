@@ -26,22 +26,23 @@ void serialize() {
 
 // initializes framebuffer, LED, and game assets (images, pipes, and player data), handles game mode selection in main menu
 void program() {
-    char path[100] = PATH;
+    char path[100] = IMGPATH;
     origin_lcd = map_phys_address(PARLCD_REG_BASE_PHYS, PARLCD_REG_SIZE, 0);
     membase = map_phys_address(SPILED_REG_BASE_PHYS, SPILED_REG_SIZE, 0);
+    printf("path %s\n", IMGPATH);
     knob_init();
     led_draw(0, 0x000000);
     led_draw(1, 0x000000);
     background = ppm_load_image(strcat(path,"background.ppm"));
-    strcpy(path, PATH);
+    strcpy(path, IMGPATH);
     top_pipe = ppm_load_image(strcat(path,"top.ppm"));
-    strcpy(path, PATH);
+    strcpy(path, IMGPATH);
     btm_pipe = ppm_load_image(strcat(path,"bottom.ppm"));
-    strcpy(path, PATH);
+    strcpy(path, IMGPATH);
     bird1 = ppm_load_image(strcat(path,"bird1.ppm"));
-    strcpy(path, PATH);
+    strcpy(path, IMGPATH);
     bird_blue = ppm_load_image(strcat(path,"bird_blue.ppm"));
-    strcpy(path, PATH);
+    strcpy(path, IMGPATH);
     bird_red = ppm_load_image(strcat(path, "bird_red.ppm"));
 
     pipe_pool = calloc(sizeof(GameObject_t), 6);
@@ -225,15 +226,15 @@ void free_img(Img *img) {
 }
 
 void exit_game(void *background, void *bird1, void *bird_red, void *bird_blue, void *top_pipe, void *btm_pipe, void *object_arr, void *pipe_arr) {
-  free_img(background);
-  free_img(bird1);
-  free_img(bird_red);
-  free_img(bird_blue);
-  free_img(top_pipe);
-  free_img(btm_pipe);
-  free(object_arr);
-  free(pipe_arr);
-  memset(origin_fb, 0x0, sizeof(origin_fb));
-  draw_buffer();
+  // free_img(background);
+  // free_img(bird1);
+  // free_img(bird_red);
+  // free_img(bird_blue);
+  // free_img(top_pipe);
+  // free_img(btm_pipe);
+  // free(object_arr);
+  // free(pipe_arr);
+  // memset(origin_fb, 0x0, sizeof(origin_fb));
+  // draw_buffer();
   exit(0);
 }
