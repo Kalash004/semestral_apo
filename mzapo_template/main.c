@@ -29,6 +29,7 @@ void program() {
     char path[100] = PATH;
     origin_lcd = map_phys_address(PARLCD_REG_BASE_PHYS, PARLCD_REG_SIZE, 0);
     membase = map_phys_address(SPILED_REG_BASE_PHYS, SPILED_REG_SIZE, 0);
+    knob_init();
     led_draw(0, 0x000000);
     led_draw(1, 0x000000);
     background = ppm_load_image(strcat(path,"background.ppm"));
@@ -117,8 +118,6 @@ void choose_singleplayer_knob(GameObject_t **player_arr) {
       break;
     }
   }
-  led_draw(0,0x00FF00); // green led
-  led_draw(1,0x00FF00);
 }
 
 // for Play Multiplayer: wait until 2-3 users choose their knobs and add them to the player array
@@ -163,8 +162,6 @@ int choose_player_knobs(GameObject_t **player_arr) {
     }
     redraw_game_multiplayer(player_count, player_arr, 0);
   }
-  led_draw(0,0x00FF00); // green led
-  led_draw(1,0x00FF00);
   return player_count;
 }
 
@@ -173,15 +170,13 @@ void main_menu(options_t *opts, void *lcd) {
   // Frame buffer
   // memset(origin_fb, 0x0, sizeof(origin_fb));
   write_img_to_buffer(background, 0, 0);
-  draw_buffer();
  // Big sparse fonts
   int highlited_index = -1;
   draw_font(100, 10, 3, "FLAPPY BIRD", 2, CHANGING_WIDTH_FONT);
-  draw_menu_bars(highlited_index, 100, 100, 40);
-  draw_buffer();
   int click_value = 0;
   while (1) {
     int debounce = 1;
+    draw_menu_bars(highlited_index, 100, 100, 40);
     draw_buffer();
     int rot = get_knob_rotation();
     click_value = get_knob_click(RED_KNOB, &debounce);
@@ -189,20 +184,15 @@ void main_menu(options_t *opts, void *lcd) {
       if(click_value == 1 && highlited_index != -1) {
         break;
       }
-      draw_buffer();
       continue;
     }
     if (rot == -1) {
       highlited_index = (highlited_index == -1 ? 0 : highlited_index - 1);
       highlited_index = (highlited_index + 4) % 4;
-      draw_menu_bars(highlited_index, 100, 100, 40);
-      draw_buffer();
     } 
     if (rot == 1) {
       highlited_index += 1;
       highlited_index = highlited_index % 4;
-      draw_menu_bars(highlited_index, 100, 100, 40);
-      draw_buffer();
     } 
     
     rot = 0;
@@ -225,6 +215,12 @@ void main_menu(options_t *opts, void *lcd) {
 }
 
 void exit_game() {
+  // free(background);
+  // free(bird1);
+  // free(bird_red);
+  // free(bird_blue);
+  // free(top_pipe);
+  // free(pipe_bottom);
   memset(origin_fb, 0x0, sizeof(origin_fb));
   draw_buffer();
   exit(0);

@@ -4,29 +4,27 @@ This module provides functions to read the state of rotary knobs and LED lights.
 It supports detecting knob rotation and clicks with debouncing, and allows setting colors on two RGB LEDs.
 */
 
+
+static uint8_t old_value;
+void knob_init() {
+  old_value = (*(volatile uint32_t*)(membase + SPILED_REG_KNOBS_8BIT_o) >> 16) & 0xff;
+}
+
 int get_knob_rotation() {
-    static int old_value = -1;
     uint8_t current_value = (*(volatile uint32_t*)(membase + SPILED_REG_KNOBS_8BIT_o) >> 16) & 0xff;
 
-    // initialize old_value and return 0 (no rotation) on 1st call
-    if (old_value == -1) {
-        old_value = current_value;
-        return 0;
+    int8_t diff = (current_value - old_value);
+    
+    if(diff > 3) {
+      old_value += 4;
+      return 1;
+    } else if(diff < -3) {
+      old_value -= 4;
+      return -1;
+    } else { // ignore noise
+      return 0;
     }
-
-    // %256 to handle overflow
-    int diff = (current_value - old_value + 256) % 256;
-
-    // ignore noise
-    if (diff < 3 || diff > 253) {
-        return 0; 
-    }
-
-
-    old_value = current_value;
-
-    // if the difference is less than 128, the knob clockwise, otherwise counter-clockwise
-    return (diff < 128) ? 1 : -1;
+    // if the difference is more than 3, the knob clockwise, else if less than -3, rotate counter-clockwise
 }
 
 int get_knob_click(int knob_num, int *debounce) {

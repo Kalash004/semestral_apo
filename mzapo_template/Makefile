@@ -12,7 +12,7 @@ LDLIBS += -lrt -lpthread
 SOURCES = img.c game.c peripherals.c graphics.c stats.c main.c mzapo_phys.c mzapo_parlcd.c serialize_lock.c 
 SOURCES += font_prop14x16.c font_rom8x16.c
 TARGET_EXE = bird
-TARGET_IP ?= 192.168.223.215
+TARGET_IP ?= 192.168.223.117
 ifeq ($(TARGET_IP),)
 ifneq ($(filter debug run,$(MAKECMDGOALS)),)
 $(warning The target IP address is not set)

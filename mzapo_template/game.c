@@ -24,8 +24,8 @@ void restart_pipes() {
  for (int i = 0; i < 3; ++i) {
     GameObject_t *pipe_top = &pipe_pool[i];
     GameObject_t *pipe_bottom = &pipe_pool[i+3];
-    pipe_top->x = PIPE_RIGHTMOST_POSITION + ((i - 1) * PIPE_GAP_XRANGE); // first is at X=420, second at X=640 etc.
-    pipe_bottom->x = PIPE_RIGHTMOST_POSITION + ((i - 1) * PIPE_GAP_XRANGE);
+    pipe_top->x = PIPE_RIGHTMOST_POSITION + (i * PIPE_GAP_XRANGE); // first is at X=420, second at X=640 etc.
+    pipe_bottom->x = PIPE_RIGHTMOST_POSITION + (i * PIPE_GAP_XRANGE);
     int rand_y = rand() % PIPE_GAP_YRANGE;
     pipe_top->y = PIPE_TOPMOST_POSITION + rand_y;
     pipe_bottom->y = PIPE_TOPMOST_POSITION + rand_y + GAP;
@@ -137,6 +137,8 @@ void get_start_click() {
   int rebounce = 1;
   int clicked = 0;
   sleep(1);
+  led_draw(0,0x00FF00); // green led
+  led_draw(1,0x00FF00);
   while (clicked == 0) {
     clicked += get_knob_click(RED_KNOB, &rebounce);
     clicked += get_knob_click(GREEN_KNOB, &rebounce);
