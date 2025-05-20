@@ -74,12 +74,15 @@ void program() {
                 choose_singleplayer_knob(player_arr);
                 play(1, player_arr);
                 break;
-            case 2:
+            case 2: {
                 int player_count = choose_player_knobs(player_arr);
                 play(player_count, player_arr);
                 break;
-            case 3:
+            } case 3:
                 draw_stats();
+                break;
+            case 4:
+                exit_game(background, bird1, bird_red, bird_blue, top_pipe, btm_pipe, player_arr, pipe_pool);
                 break;
         }
     }
@@ -208,19 +211,28 @@ void main_menu(options_t *opts, void *lcd) {
       opts->game_mode = 3;
       break;
     case 3:
-      exit_game();
+      opts->game_mode = 4;
       break;
   }
 
 }
 
-void exit_game() {
-  // free(background);
-  // free(bird1);
-  // free(bird_red);
-  // free(bird_blue);
-  // free(top_pipe);
-  // free(pipe_bottom);
+void free_img(Img *img) {
+  if(img == NULL) return;
+  free(img->data);
+  free(img);
+  img = NULL;
+}
+
+void exit_game(void *background, void *bird1, void *bird_red, void *bird_blue, void *top_pipe, void *btm_pipe, void *object_arr, void *pipe_arr) {
+  free_img(background);
+  free_img(bird1);
+  free_img(bird_red);
+  free_img(bird_blue);
+  free_img(top_pipe);
+  free_img(btm_pipe);
+  free(object_arr);
+  free(pipe_arr);
   memset(origin_fb, 0x0, sizeof(origin_fb));
   draw_buffer();
   exit(0);
